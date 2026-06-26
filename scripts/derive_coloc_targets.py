@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 
 import numpy as np
@@ -33,6 +34,20 @@ def sign_label(x: float) -> str:
     return "neutral"
 
 
+def fixed_effect_ivw(beta: pd.Series, se: pd.Series) -> tuple[float, float, int]:
+    ok = beta.notna() & se.notna() & se.gt(0)
+    if not ok.any():
+        return np.nan, np.nan, 0
+    weights = 1.0 / np.square(se[ok])
+    estimate = np.sum(weights * beta[ok]) / np.sum(weights)
+    se_ivw = np.sqrt(1.0 / np.sum(weights))
+    return float(estimate), float(se_ivw), int(ok.sum())
+
+
+def two_sided_normal_p(z: pd.Series) -> pd.Series:
+    return z.abs().map(lambda x: math.erfc(x / math.sqrt(2.0)) if pd.notna(x) else np.nan)
+
+
 def main() -> None:
     args = parse_args()
     coloc = pd.read_csv(args.coloc, sep="\t")
@@ -55,9 +70,16 @@ def main() -> None:
     targets["protective_expression_direction"] = -targets["risk_expression_direction"]
     targets["protective_direction_label"] = targets["protective_expression_direction"].map(sign_label)
     targets["risk_direction_label"] = targets["risk_expression_direction"].map(sign_label)
-    targets["target_weight"] = targets["PP.H4.abf"].clip(lower=0) * (
-        targets["GWAS_SNP_Beta"].abs() / targets["GWAS_SNP_SE"].replace(0, np.nan)
-    ).fillna(1.0)
+    targets["gwas_z_abs"] = targets["GWAS_SNP_Beta"].abs() / targets["GWAS_SNP_SE"].replace(0, np.nan)
+    targets["target_weight"] = 1.0
+
+    targets["mr_wald_beta"] = targets["GWAS_SNP_Beta"] / targets["QTL_Beta"]
+    targets["mr_wald_se"] = np.sqrt(
+        np.square(targets["GWAS_SNP_SE"] / targets["QTL_Beta"])
+        + np.square(targets["GWAS_SNP_Beta"] * targets["QTL_SE"] / np.square(targets["QTL_Beta"]))
+    )
+    targets["mr_wald_z"] = targets["mr_wald_beta"] / targets["mr_wald_se"].replace(0, np.nan)
+    targets["mr_wald_p"] = two_sided_normal_p(targets["mr_wald_z"])
 
     sort_cols = ["PP.H4.abf", "gene_name", "GWAS", "locus"]
     targets = targets.sort_values(sort_cols, ascending=[False, True, True, True])
@@ -78,6 +100,11 @@ def main() -> None:
         "QTL_Beta",
         "QTL_SE",
         "PP.H4.abf",
+        "gwas_z_abs",
+        "mr_wald_beta",
+        "mr_wald_se",
+        "mr_wald_z",
+        "mr_wald_p",
         "protective_expression_direction",
         "protective_direction_label",
         "risk_expression_direction",
@@ -95,10 +122,21 @@ def main() -> None:
             n_coloc=("PP.H4.abf", "size"),
             max_h4=("PP.H4.abf", "max"),
             mean_h4=("PP.H4.abf", "mean"),
+            max_gwas_z_abs=("gwas_z_abs", "max"),
             protective_score=("weighted_direction", "sum"),
             total_weight=("target_weight", "sum"),
+            mean_mr_wald_beta=("mr_wald_beta", "mean"),
+            median_mr_wald_beta=("mr_wald_beta", "median"),
         )
     )
+    mr_rows = []
+    for gene_name, frame in targets.groupby("gene_name"):
+        beta, se, n = fixed_effect_ivw(frame["mr_wald_beta"], frame["mr_wald_se"])
+        mr_rows.append({"gene_name": gene_name, "mr_ivw_beta": beta, "mr_ivw_se": se, "mr_n": n})
+    mr_summary = pd.DataFrame(mr_rows)
+    gene_summary = gene_summary.merge(mr_summary, on="gene_name", how="left")
+    gene_summary["mr_ivw_z"] = gene_summary["mr_ivw_beta"] / gene_summary["mr_ivw_se"].replace(0, np.nan)
+    gene_summary["mr_ivw_p"] = two_sided_normal_p(gene_summary["mr_ivw_z"])
     gene_summary["protective_expression_direction"] = np.sign(gene_summary["protective_score"])
     gene_summary["protective_direction_label"] = gene_summary["protective_expression_direction"].map(sign_label)
     gene_summary["abs_protective_score"] = gene_summary["protective_score"].abs()

@@ -56,14 +56,40 @@ risk_expression_direction = sign(QTL_Beta * GWAS_SNP_Beta)
 protective_expression_direction = -risk_expression_direction
 ```
 
-Rows are filtered to gene-expression colocalizations with `PP.H4.abf >= 0.8` and `distance_filter == PASS`. Multiple coloc rows for the same gene are collapsed to a gene-level target by summing the protective direction weighted by coloc posterior and GWAS z-score magnitude:
+Rows are filtered to gene-expression colocalizations with `PP.H4.abf >= 0.8` and `distance_filter == PASS`. Multiple coloc rows for the same gene are collapsed to a gene-level target by summing the protective direction across rows:
 
 ```text
-target_weight = PP.H4.abf * abs(GWAS_SNP_Beta / GWAS_SNP_SE)
+target_weight = 1
 gene protective_score = sum(protective_expression_direction * target_weight)
 ```
 
-The sign of the gene-level `protective_score` is the target direction used for drug matching.
+The sign of the gene-level `protective_score` is the target direction used for drug matching. `PP.H4.abf` is used as a high-confidence filter and reporting column, not as a drug-matching weight, because it varies only from 0.8 to 1.0 after filtering.
+
+### Naive Mendelian randomization estimate
+
+The pipeline also reports a very naive single-variant MR/Wald ratio for each coloc row:
+
+```text
+mr_wald_beta = GWAS_SNP_Beta / QTL_Beta
+```
+
+Using first-order delta-method error propagation:
+
+```text
+mr_wald_se = sqrt(
+    (GWAS_SNP_SE / QTL_Beta)^2
+    + (GWAS_SNP_Beta * QTL_SE / QTL_Beta^2)^2
+)
+```
+
+At the gene level, coloc-row Wald estimates are combined with a fixed-effect inverse-variance weighted estimate:
+
+```text
+mr_ivw_beta = sum(mr_wald_beta / mr_wald_se^2) / sum(1 / mr_wald_se^2)
+mr_ivw_se = sqrt(1 / sum(1 / mr_wald_se^2))
+```
+
+Interpretation is deliberately cautious. This is not a full MR analysis: it reuses coloc summary rows, may duplicate correlated evidence across references/GWAS releases, and does not model pleiotropy or LD among instruments. It is included as an effect-size sanity check: positive `mr_*_beta` means genetically increased expression is associated with increased AD risk, while negative means genetically increased expression is associated with lower AD risk.
 
 ### LINCS drug direction
 
@@ -88,12 +114,12 @@ Each compound is summarized across LINCS-covered coloc target genes:
 - `n_target_genes`: number of represented coloc target genes.
 - `n_protective_genes`: genes with `protective_push_z > 0`.
 - `n_strong_protective_genes`: genes with `protective_push_z >= 1`.
-- `weighted_mean_protective_push_z`: weighted mean of `protective_push_z`, using the gene-level genetic target weight.
+- `weighted_mean_protective_push_z`: currently equal-gene-weight mean of `protective_push_z`; the column name is retained for compatibility with earlier outputs.
 - `fraction_genes_protective`: `n_protective_genes / n_target_genes`.
 
 The default ranking emphasizes multi-gene support: first `n_strong_protective_genes`, then `weighted_mean_protective_push_z`, then `fraction_genes_protective`.
 
-This ranking is intentionally preliminary. A drug with several strong gene pushes can still have a negative weighted mean if it strongly opposes highly weighted genes. Those cases are useful pathway comparators but should not be treated as clean protective candidates.
+This ranking is intentionally preliminary. A drug with several strong gene pushes can still have a negative mean if it strongly opposes other target genes. Those cases are useful pathway comparators but should not be treated as clean protective candidates.
 
 ## MOA/target annotations
 

@@ -33,6 +33,10 @@ def main() -> None:
         "mean_h4",
         "n_coloc",
         "total_weight",
+        "max_gwas_z_abs",
+        "mr_ivw_beta",
+        "mr_ivw_se",
+        "mr_ivw_p",
     ]
     merged = drug_gene.merge(targets[target_cols], on="gene_name", how="inner")
     merged["protective_push_z"] = merged["mean_z"] * merged["protective_expression_direction"]
@@ -55,6 +59,9 @@ def main() -> None:
             median_protective_push_z=("protective_push_z", "median"),
             summed_weighted_push=("weighted_protective_push", "sum"),
             total_weight=("total_weight", "sum"),
+            mean_target_mr_ivw_beta=("mr_ivw_beta", "mean"),
+            median_target_mr_ivw_beta=("mr_ivw_beta", "median"),
+            min_target_mr_ivw_p=("mr_ivw_p", "min"),
             min_n_signatures=("n_signatures", "min"),
             total_gene_signatures=("n_signatures", "sum"),
         )

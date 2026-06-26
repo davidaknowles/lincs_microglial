@@ -176,7 +176,14 @@ def make_match_plots(annotated: pd.DataFrame, gene_scores: pd.DataFrame, targets
         on=["pert_id", "pert_iname"],
         how="inner",
     )
-    target_cols = ["gene_name", "protective_direction_label", "max_h4", "total_weight", "abs_protective_score"]
+    target_cols = [
+        "gene_name",
+        "protective_direction_label",
+        "max_h4",
+        "max_gwas_z_abs",
+        "mr_ivw_beta",
+        "abs_protective_score",
+    ]
     gene_scores = gene_scores.merge(targets[target_cols], on="gene_name", how="left", suffixes=("", "_target"))
     gene_scores["gene_label"] = gene_scores["gene_name"].astype(str)
     gene_order = (
@@ -209,18 +216,18 @@ def make_match_plots(annotated: pd.DataFrame, gene_scores: pd.DataFrame, targets
         match=gene_scores["protective_push_z"].gt(0).map({True: "matches", False: "opposes"}),
     )
     p = (
-        ggplot(signed, aes("total_weight", "mean_z", color="match"))
+        ggplot(signed, aes("max_gwas_z_abs", "mean_z", color="match"))
         + geom_hline(yintercept=0, color="#555555", size=0.4)
         + geom_point(aes(size="max_h4"), alpha=0.9)
         + geom_text(aes(label="gene_name"), nudge_y=0.15, size=7, va="bottom", show_legend=False)
         + facet_wrap("~pert_iname", ncol=2)
         + scale_color_manual(values={"matches": "#2f7d4f", "opposes": "#9c2f2f"})
         + labs(
-            x="Genetic target weight",
+            x="Max coloc GWAS |z| for gene",
             y="LINCS THP1 mean z-score",
             color="Drug direction",
             size="Max PPF.H4",
-            title="Genetic target strength versus drug-induced expression",
+            title="Genetic evidence versus drug-induced expression",
         )
         + theme_bw()
         + theme(figure_size=(10, 8))
@@ -280,6 +287,9 @@ def main() -> None:
         "fraction_genes_protective",
         "mean_protective_push_z",
         "median_protective_push_z",
+        "mean_target_mr_ivw_beta",
+        "median_target_mr_ivw_beta",
+        "min_target_mr_ivw_p",
         "min_n_signatures",
         "total_gene_signatures",
     ]
