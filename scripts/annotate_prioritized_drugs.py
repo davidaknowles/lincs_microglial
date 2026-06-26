@@ -7,6 +7,7 @@ import argparse
 import textwrap
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from plotnine import (
     aes,
@@ -202,23 +203,37 @@ def make_match_plots(annotated: pd.DataFrame, gene_scores: pd.DataFrame, targets
     )
     gene_scores["gene_label"] = pd.Categorical(gene_scores["gene_label"], categories=gene_order[::-1], ordered=True)
 
-    p = (
+    base = (
         ggplot(gene_scores, aes("gene_label", "protective_push_z", fill="protective_push_z"))
         + geom_col()
         + geom_hline(yintercept=0, color="#333333", size=0.4)
-        + facet_wrap("~drug_label", ncol=1)
-        + scale_fill_gradient2(low="#9c2f2f", mid="#f7f7f7", high="#2f7d4f", midpoint=0)
+        + facet_wrap("~drug_label", nrow=1)
         + labs(
             x="ISOMIGA AD coloc target gene",
             y="LINCS z-score in protective direction",
-            fill="Protective push",
             title="",
         )
         + theme_bw()
-        + theme(figure_size=(6.2, 7.0), axis_text_x=element_text(rotation=45, ha="right"), strip_text=element_text(size=8))
+        + theme(figure_size=(8.0, 3.8), axis_text_x=element_text(rotation=45, ha="right"), strip_text=element_text(size=7))
+    )
+    p = (
+        base
+        + aes(fill="protective_direction_label")
+        + scale_fill_manual(values={"increase": "#2f7d4f", "decrease": "#9c2f2f"}, na_value="#999999")
+        + labs(fill="Protective expression")
     )
     p.save(fig_dir / "selected_promising_drug_gene_match_bars.png", dpi=300)
     p.save(fig_dir / "selected_promising_drug_gene_match_bars.pdf")
+
+    gene_scores["mr_ivw_z"] = gene_scores["mr_ivw_beta"] / gene_scores["mr_ivw_se"].replace(0, np.nan)
+    p = (
+        base
+        + aes(fill="mr_ivw_z")
+        + scale_fill_gradient2(low="#2f7d4f", mid="#f7f7f7", high="#9c2f2f", midpoint=0)
+        + labs(fill="MR z")
+    )
+    p.save(fig_dir / "selected_promising_drug_gene_match_bars_mr_z.png", dpi=300)
+    p.save(fig_dir / "selected_promising_drug_gene_match_bars_mr_z.pdf")
 
     signed = gene_scores.assign(
         genetics_direction=gene_scores["protective_direction_label"],
