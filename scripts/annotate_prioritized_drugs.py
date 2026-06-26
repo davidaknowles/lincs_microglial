@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import textwrap
 from pathlib import Path
 
 import pandas as pd
@@ -122,6 +123,11 @@ MANUAL_ANNOTATIONS = {
 PROMISING = ["BIBR-1532", "AS-605240", "myriocin", "AZD-8055", "triptolide"]
 
 
+def drug_label(name: str, moa: str, width: int = 48) -> str:
+    label = f"{name} ({moa})"
+    return "\n".join(textwrap.wrap(label, width=width, break_long_words=False))
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scores", default="data/processed/lincs_thp1_protective_drug_scores.tsv")
@@ -176,6 +182,9 @@ def make_match_plots(annotated: pd.DataFrame, gene_scores: pd.DataFrame, targets
         on=["pert_id", "pert_iname"],
         how="inner",
     )
+    gene_scores["drug_label"] = [drug_label(name, moa) for name, moa in zip(gene_scores["pert_iname"], gene_scores["moa"])]
+    label_order = [drug_label(row.pert_iname, row.moa) for row in selected_meta.itertuples()]
+    gene_scores["drug_label"] = pd.Categorical(gene_scores["drug_label"], categories=label_order, ordered=True)
     target_cols = [
         "gene_name",
         "protective_direction_label",
@@ -197,18 +206,19 @@ def make_match_plots(annotated: pd.DataFrame, gene_scores: pd.DataFrame, targets
         ggplot(gene_scores, aes("gene_label", "protective_push_z", fill="protective_push_z"))
         + geom_col()
         + geom_hline(yintercept=0, color="#333333", size=0.4)
-        + facet_wrap("~pert_iname", ncol=1)
+        + facet_wrap("~drug_label", ncol=1)
         + scale_fill_gradient2(low="#9c2f2f", mid="#f7f7f7", high="#2f7d4f", midpoint=0)
         + labs(
             x="ISOMIGA AD coloc target gene",
             y="LINCS z-score in protective direction",
             fill="Protective push",
-            title="Selected THP1 drug perturbations matched to protective genetic directions",
+            title="",
         )
         + theme_bw()
-        + theme(figure_size=(8, 10), axis_text_x=element_text(rotation=45, ha="right"))
+        + theme(figure_size=(6.2, 7.0), axis_text_x=element_text(rotation=45, ha="right"), strip_text=element_text(size=8))
     )
     p.save(fig_dir / "selected_promising_drug_gene_match_bars.png", dpi=300)
+    p.save(fig_dir / "selected_promising_drug_gene_match_bars.pdf")
 
     signed = gene_scores.assign(
         genetics_direction=gene_scores["protective_direction_label"],
