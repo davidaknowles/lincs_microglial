@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import io
 from pathlib import Path
 
 import h5py
@@ -151,7 +152,7 @@ def main() -> None:
         if c in long.columns
     ]
     long = long[meta_cols]
-    with gzip.open(args.out_long, "wt") as fout:
+    with gzip.GzipFile(args.out_long, "w", mtime=0) as gz, io.TextIOWrapper(gz, encoding="utf-8") as fout:
         long.to_csv(fout, sep="\t", index=False)
 
     summary = (
