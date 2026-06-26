@@ -41,6 +41,10 @@ Steps:
    - Ranks drugs using MR beta magnitude and MR standard error, not only genetic direction.
    - Reports `mr_lincs_effect = -LINCS_mean_z * mr_ivw_beta`, where positive values indicate predicted reduction in AD risk.
    - Reports `mr_lincs_precision_match = -LINCS_mean_z * (mr_ivw_beta / mr_ivw_se)`, which upweights genes with more precise naive MR estimates.
+7. `scripts/score_mr_lincs_regression.py`
+   - Fits a heteroskedastic no-intercept regression for each drug: `MR_beta_g = slope_drug * LINCS_z_drug,g + error_g`.
+   - Uses weights `1 / MR_se_g^2`.
+   - Ranks by the one-sided significance of a protective negative slope, `p(slope < 0)`.
 
 ## Gene-drug matching logic
 
@@ -138,6 +142,26 @@ Positive values mean that the LINCS drug perturbation changes expression in a di
 
 This score is distinct from the direction-only protective-push score. It can promote drugs whose effects fall on genes with larger or more precise MR estimates, even if their direction-only rank is lower.
 
+### Heteroskedastic no-intercept regression score
+
+The regression score treats the LINCS drug signature as the predictor and the naive MR beta as the outcome across target genes:
+
+```text
+MR_beta_g = slope_drug * LINCS_z_drug,g + error_g
+weight_g = 1 / MR_se_g^2
+```
+
+No intercept is fit because the null drug signature (`LINCS_z = 0`) should imply no genetically predicted risk effect. A protective drug should have a negative slope: genes increased by the drug tend to have negative MR betas, and genes decreased by the drug tend to have positive MR betas.
+
+The weighted no-intercept estimate is:
+
+```text
+slope = sum(weight_g * LINCS_z_g * MR_beta_g) / sum(weight_g * LINCS_z_g^2)
+slope_se = sqrt(1 / sum(weight_g * LINCS_z_g^2))
+```
+
+Drugs are ranked by the one-sided p-value for `slope < 0`, with smaller `p_protective` indicating a more significant protective-direction match.
+
 ## MOA/target annotations
 
 `data/processed/prelim_top_lincs_thp1_protective_drugs_annotated.tsv` adds:
@@ -165,6 +189,8 @@ Manual notes are intended for prioritization context, not clinical interpretatio
 - `data/processed/prelim_top_lincs_thp1_protective_drugs_annotated.tsv`: top 50 table with known MOA/targets and biology notes.
 - `data/processed/lincs_thp1_mr_lincs_drug_scores.tsv`: MR-aware drug ranking.
 - `data/processed/lincs_thp1_mr_lincs_drug_gene_scores.tsv`: per-drug, per-gene MR-aware match scores.
+- `data/processed/lincs_thp1_mr_lincs_regression_drug_scores.tsv`: weighted no-intercept regression drug ranking.
+- `data/processed/lincs_thp1_mr_lincs_regression_gene_data.tsv`: per-drug, per-gene data used by the regression ranking.
 - `notebooks/isomiga_lincs_prelim_analysis.ipynb`: plotnine analysis notebook.
 - `notebooks/isomiga_lincs_prelim_analysis.executed.ipynb`: executed copy.
 - `results/figures/*.png`: preliminary figures.
@@ -180,6 +206,8 @@ Key figures:
 - `selected_promising_drug_summary.png`: summary scores for selected interesting drugs.
 - `top_mr_lincs_drug_scores.png`: top drugs by MR-aware LINCS match.
 - `top_mr_lincs_gene_driver_scatter.png`: per-gene drivers of the top MR-aware drug matches.
+- `top_mr_lincs_regression_drug_scores.png`: drugs ranked by one-sided significance of protective regression slope.
+- `top_mr_lincs_regression_fits.png`: weighted no-intercept fits for the top protective slopes.
 
 ## Current run summary
 

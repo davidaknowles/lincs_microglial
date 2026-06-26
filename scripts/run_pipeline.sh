@@ -19,3 +19,5 @@ python scripts/score_lincs_drugs.py --min-genes 2
 python scripts/annotate_prioritized_drugs.py
 
 python scripts/score_mr_lincs_drugs.py
+
+python scripts/score_mr_lincs_regression.py
