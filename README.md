@@ -37,6 +37,10 @@ Steps:
    - Adds known MOA/target annotations from Broad Drug Repurposing Hub where available.
    - Adds manual annotations for high-priority LINCS Phase I compounds missing from the Repurposing Hub table.
    - Writes selected-drug match plots for compounds with a strong score and/or compelling microglial biology.
+6. `scripts/score_mr_lincs_drugs.py`
+   - Ranks drugs using MR beta magnitude and MR standard error, not only genetic direction.
+   - Reports `mr_lincs_effect = -LINCS_mean_z * mr_ivw_beta`, where positive values indicate predicted reduction in AD risk.
+   - Reports `mr_lincs_precision_match = -LINCS_mean_z * (mr_ivw_beta / mr_ivw_se)`, which upweights genes with more precise naive MR estimates.
 
 ## Gene-drug matching logic
 
@@ -121,6 +125,19 @@ The default ranking emphasizes multi-gene support: first `n_strong_protective_ge
 
 This ranking is intentionally preliminary. A drug with several strong gene pushes can still have a negative mean if it strongly opposes other target genes. Those cases are useful pathway comparators but should not be treated as clean protective candidates.
 
+### MR-aware compound score
+
+The MR-aware ranking uses the magnitude and uncertainty of the naive gene-level MR estimates:
+
+```text
+mr_lincs_effect = -LINCS_mean_z * mr_ivw_beta
+mr_lincs_precision_match = -LINCS_mean_z * (mr_ivw_beta / mr_ivw_se)
+```
+
+Positive values mean that the LINCS drug perturbation changes expression in a direction predicted by the naive MR estimate to reduce AD risk. The default MR-aware ranking sorts by `sum_precision_match`, then `mean_mr_lincs_effect`, then `fraction_positive_mr_effect`.
+
+This score is distinct from the direction-only protective-push score. It can promote drugs whose effects fall on genes with larger or more precise MR estimates, even if their direction-only rank is lower.
+
 ## MOA/target annotations
 
 `data/processed/prelim_top_lincs_thp1_protective_drugs_annotated.tsv` adds:
@@ -146,6 +163,8 @@ Manual notes are intended for prioritization context, not clinical interpretatio
 - `data/processed/lincs_thp1_protective_drug_gene_scores.tsv`: per-compound, per-gene protective-push scores.
 - `data/processed/prelim_top_lincs_thp1_protective_drugs.tsv`: top 50 table exported by the notebook.
 - `data/processed/prelim_top_lincs_thp1_protective_drugs_annotated.tsv`: top 50 table with known MOA/targets and biology notes.
+- `data/processed/lincs_thp1_mr_lincs_drug_scores.tsv`: MR-aware drug ranking.
+- `data/processed/lincs_thp1_mr_lincs_drug_gene_scores.tsv`: per-drug, per-gene MR-aware match scores.
 - `notebooks/isomiga_lincs_prelim_analysis.ipynb`: plotnine analysis notebook.
 - `notebooks/isomiga_lincs_prelim_analysis.executed.ipynb`: executed copy.
 - `results/figures/*.png`: preliminary figures.
@@ -159,6 +178,8 @@ Key figures:
 - `selected_promising_drug_gene_match_bars.png`: per-gene protective push for selected interesting drugs.
 - `selected_promising_drug_genetics_lincs_scatter.png`: genetic target weight versus LINCS expression effect for selected drugs.
 - `selected_promising_drug_summary.png`: summary scores for selected interesting drugs.
+- `top_mr_lincs_drug_scores.png`: top drugs by MR-aware LINCS match.
+- `top_mr_lincs_gene_driver_scatter.png`: per-gene drivers of the top MR-aware drug matches.
 
 ## Current run summary
 
