@@ -1,0 +1,10 @@
+pandas
+numpy
+scipy
+h5py
+requests
+tqdm
+plotnine
+jupyter
+nbformat
+ipykernel
