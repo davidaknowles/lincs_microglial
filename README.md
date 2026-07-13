@@ -46,6 +46,52 @@ Steps:
    - Uses weights `1 / MR_se_g^2`.
    - Ranks by the one-sided significance of a protective negative slope, `p(slope < 0)`.
 
+## CPA THP1 imputation
+
+The CPA extension predicts THP1 drug responses for LINCS compounds that are well represented in other cell lines. It is kept separate from the preliminary observed-only pipeline because CPA has a different Python dependency stack.
+
+Set up the CPA environment:
+
+```bash
+scripts/setup_cpa_env.sh
+```
+
+Run the validation pilot:
+
+```bash
+sbatch scripts/slurm/cpa_validation_pilot.sbatch
+```
+
+Run the final all-gene model:
+
+```bash
+sbatch scripts/slurm/cpa_final_full.sbatch
+```
+
+If the all-gene model is not feasible after lowering batch size, run the landmark fallback:
+
+```bash
+sbatch scripts/slurm/cpa_final_landmark_fallback.sbatch
+```
+
+CPA data preparation uses 6-hour LINCS Level 5 z-scores, `trt_cp` compound profiles, and vehicle controls recoded as `DMSO`. Drugs are eligible for THP1 imputation when they have a usable canonical SMILES string, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines. Synthetic THP1 query rows use THP1 vehicle-control expression as the basal state, with the target drug and dose encoded in CPA metadata.
+
+Two split modes are implemented:
+
+- Validation mode holds out all observed THP1 compound perturbations as `ood`, while retaining THP1 controls. This tests whether CPA can recover measured THP1 responses from non-THP1 drug evidence.
+- Final mode trains with all observed THP1 perturbations and predicts only eligible drugs without observed THP1 compound profiles.
+
+The default final attempt trains CPA on all 12,328 LINCS genes. If this is infeasible, the fallback trains CPA on measured L1000 landmark genes and then applies a ridge landmark-to-all-gene imputation model fit from observed LINCS signatures. Fallback outputs label genes as landmark-measured or post-CPA-imputed.
+
+After CPA prediction, `scripts/rank_cpa_drugs_by_isomiga.py` combines observed and predicted THP1 responses with ISOMIGA coloc targets. Observed THP1 responses are preferred when both observed and predicted responses exist. Drugs are ranked by the simple count of matched ISOMIGA genes moved in the protective direction:
+
+```text
+protective_push_z = mean_z * protective_expression_direction
+n_protective_genes = count(protective_push_z > 0)
+```
+
+The combined ranking writes observed-only, predicted-only, and combined drug tables under `data/processed/cpa/`.
+
 ## Gene-drug matching logic
 
 ### Genetic protective direction

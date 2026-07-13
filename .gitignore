@@ -10,6 +10,13 @@ data/raw/
 *.gctx
 *.gctx.gz
 
+# CPA generated artifacts
+data/processed/cpa/*.h5ad
+data/processed/cpa/*.npz
+results/cpa/
+logs/
+*.ckpt
+
 # Temporary/partial downloads
 *.part
 *.tmp

@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Build CPA-ready AnnData from LINCS GSE92742 Level 5 signatures."""
+
+from __future__ import annotations
+
+import argparse
+
+import _bootstrap  # noqa: F401
+from lincs_microglial.cpa_prep import prepare_cpa_data, write_anndata
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--mode", choices=["validation", "final"], default="validation")
+    parser.add_argument("--gene-mode", choices=["pilot", "all", "landmark"], default="pilot")
+    parser.add_argument("--time-hours", type=float, default=6)
+    parser.add_argument("--min-non-thp1-signatures", type=int, default=20)
+    parser.add_argument("--min-non-thp1-cell-lines", type=int, default=3)
+    parser.add_argument("--targets", default="data/processed/protective_expression_gene_summary.tsv")
+    parser.add_argument("--out-h5ad", default="data/processed/cpa/cpa_lincs_validation_pilot.h5ad")
+    parser.add_argument("--out-eligible", default="data/processed/cpa/cpa_lincs_eligible_drugs.tsv")
+    parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--chunk-size", type=int, default=2048)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    prepared = prepare_cpa_data(
+        mode=args.mode,
+        gene_mode=args.gene_mode,
+        time_hours=args.time_hours,
+        min_non_thp1_signatures=args.min_non_thp1_signatures,
+        min_non_thp1_cell_lines=args.min_non_thp1_cell_lines,
+        targets=args.targets,
+        seed=args.seed,
+        chunk_size=args.chunk_size,
+    )
+    write_anndata(prepared, args.out_h5ad, args.out_eligible)
+    print(f"Wrote CPA AnnData: {args.out_h5ad}")
+    print(f"Wrote eligible drug table: {args.out_eligible}")
+    print(prepared.obs["split"].value_counts().to_string())
+
+
+if __name__ == "__main__":
+    main()
