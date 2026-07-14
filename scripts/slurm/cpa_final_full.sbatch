@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -J cpa_final_full
 #SBATCH -p gpu
-#SBATCH --gres=gpu:b6k:1
+#SBATCH --gres=gpu:l40s:1
 #SBATCH -c 12
 #SBATCH --mem=220G
 #SBATCH -t 48:00:00

@@ -45,3 +45,6 @@ Ranking after CPA:
 - CPA predictions are used for unknown THP1 drug responses.
 - Drugs are ranked by `n_protective_genes`, the count of matched ISOMIGA genes with LINCS/CPA z-score sign matching the genetic protective direction.
 
+Implementation note:
+
+- CPA 0.8.8 currently runs in a Python 3.10 environment with torch 2.0.0 and CUDA 11.7 wheels. That stack does not support Blackwell GPUs, so the CPA Slurm jobs request L40S GPUs.

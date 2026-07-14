@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -J cpa_val_pilot
 #SBATCH -p gpu
-#SBATCH --gres=gpu:b6k:1
+#SBATCH --gres=gpu:l40s:1
 #SBATCH -c 8
 #SBATCH --mem=96G
 #SBATCH -t 12:00:00
