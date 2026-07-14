@@ -59,6 +59,7 @@ def train_cpa(
     check_val_every_n_epoch: int = 5,
     early_stopping_patience: int = 10,
     hyperparams: dict | None = None,
+    plan_kwargs: dict | None = None,
 ):
     ensure_cpa_compat()
     import scanpy as sc
@@ -84,6 +85,7 @@ def train_cpa(
         batch_size=batch_size,
         check_val_every_n_epoch=check_val_every_n_epoch,
         early_stopping_patience=early_stopping_patience,
+        plan_kwargs=plan_kwargs,
         save_path=str(out_dir),
     )
     return model

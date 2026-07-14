@@ -53,6 +53,8 @@ The CPA extension predicts THP1 drug responses for LINCS compounds that are well
 Set up the CPA environment:
 
 ```bash
+# Expects a Python-3.12-compatible CPA checkout at ../CPA by default.
+# Set CPA_SOURCE=/path/to/CPA to use a different checkout.
 scripts/setup_cpa_env.sh
 ```
 

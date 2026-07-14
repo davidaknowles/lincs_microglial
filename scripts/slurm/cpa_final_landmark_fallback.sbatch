@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH -J cpa_final_lm
 #SBATCH -p gpu
-#SBATCH --gres=gpu:l40s:1
+#SBATCH --gres=gpu:b6k:1
 #SBATCH -c 12
 #SBATCH --mem=160G
 #SBATCH -t 48:00:00
@@ -9,9 +9,9 @@
 #SBATCH -e logs/cpa_final_landmark.%j.err
 
 set -euo pipefail
-module load Python/3.10.8-GCCcore-12.2.0
-. "${HOME}/venv/cpa_lincs/bin/activate"
-export PYTHONPATH="${PWD}:${PWD}/cpa_compat:${PYTHONPATH:-}"
+module load Python/3.12.3-GCCcore-13.3.0
+. "${HOME}/venv/cpa_blackwell/bin/activate"
+export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
 mkdir -p logs data/processed/cpa results/cpa
 
 python scripts/prepare_cpa_lincs.py \

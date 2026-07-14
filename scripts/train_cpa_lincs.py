@@ -17,6 +17,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--check-val-every-n-epoch", type=int, default=5)
     parser.add_argument("--early-stopping-patience", type=int, default=10)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--adv-lr", type=float, default=1e-4)
+    parser.add_argument("--doser-lr", type=float, default=1e-4)
     parser.add_argument("--cpu", action="store_true")
     return parser.parse_args()
 
@@ -31,6 +34,7 @@ def main() -> None:
         use_gpu=not args.cpu,
         check_val_every_n_epoch=args.check_val_every_n_epoch,
         early_stopping_patience=args.early_stopping_patience,
+        plan_kwargs={"lr": args.lr, "adv_lr": args.adv_lr, "doser_lr": args.doser_lr},
     )
     print(f"Wrote CPA model: {args.out_dir}")
 

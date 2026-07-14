@@ -47,4 +47,6 @@ Ranking after CPA:
 
 Implementation note:
 
-- CPA 0.8.8 currently runs in a Python 3.10 environment with torch 2.0.0 and CUDA 11.7 wheels. That stack does not support Blackwell GPUs, so the CPA Slurm jobs request L40S GPUs.
+- The CPA workflow now targets a local CPA branch updated for Python 3.12, modern scvi-tools/lightning APIs, and torch CUDA 12.8 wheels for Blackwell GPUs.
+- The validation pilot uses `--gene-mode pilot`, which includes L1000 landmark genes, ISOMIGA target genes, and filler genes up to 2,000 total genes. Final full mode uses all LINCS genes; the fallback mode trains on L1000 landmarks and imputes back to all genes.
+- CPA training now defaults to lower optimizer learning rates (`lr`, `adv_lr`, and `doser_lr` set to `1e-4`) after the original training configuration produced unstable decoder outputs during the pilot run.

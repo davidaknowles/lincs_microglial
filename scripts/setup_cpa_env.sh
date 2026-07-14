@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-module load Python/3.10.8-GCCcore-12.2.0
+module load Python/3.12.3-GCCcore-13.3.0
 
-python -m venv "${HOME}/venv/cpa_lincs"
-. "${HOME}/venv/cpa_lincs/bin/activate"
-export PYTHONPATH="${PWD}/cpa_compat:${PYTHONPATH:-}"
+python -m venv "${HOME}/venv/cpa_blackwell"
+. "${HOME}/venv/cpa_blackwell/bin/activate"
 python -m pip install --upgrade pip wheel setuptools
-python -m pip install "cpa-tools==0.8.8" ipykernel
-python -m pip install "pyarrow<15"
+python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+CPA_SOURCE="${CPA_SOURCE:-../CPA}"
+python -m pip install -e "${CPA_SOURCE}" --extra-index-url https://download.pytorch.org/whl/cu128
+python -m pip install ipykernel
 python - <<'PY'
 import anndata
 import cpa
