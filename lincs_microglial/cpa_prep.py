@@ -94,9 +94,9 @@ def add_cpa_columns(sig: pd.DataFrame) -> pd.DataFrame:
     dose = pd.to_numeric(out["pert_dose"], errors="coerce")
     out["dose_um"] = dose
     out["log_dose"] = np.where(out["condition_ID"].eq(CONTROL_GROUP), 0.0, np.log10(dose.clip(lower=1e-6)))
-    out["log_dose"] = pd.Series(out["log_dose"]).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
+    out["log_dose"] = pd.Series(out["log_dose"], index=out.index).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
     cpa_dose = np.where(out["condition_ID"].eq(CONTROL_GROUP), 0.0, dose.clip(lower=1e-6))
-    out[CPA_DOSE_KEY] = pd.Series(cpa_dose).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
+    out[CPA_DOSE_KEY] = pd.Series(cpa_dose, index=out.index).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
     out["cell_type"] = out["cell_id"].astype(str)
     return out
 
