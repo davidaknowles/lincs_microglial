@@ -27,7 +27,7 @@ Model setup:
 - Controls are recoded to CPA control group `DMSO`.
 - The default time point is 6 hours to match THP1 conditions.
 - Drug eligibility requires usable SMILES, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines.
-- CPA uses `condition_ID`, `log_dose`, `cell_type`, and RDKit embeddings from canonical SMILES.
+- CPA uses `condition_ID`, nonnegative raw-dose `cpa_dose`, `cell_type`, and RDKit embeddings from canonical SMILES. `log_dose` is retained as metadata but is not passed to CPA's `logsigm` doser.
 
 Split strategy:
 

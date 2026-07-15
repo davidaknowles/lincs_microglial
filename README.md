@@ -76,7 +76,7 @@ If the all-gene model is not feasible after lowering batch size, run the landmar
 sbatch scripts/slurm/cpa_final_landmark_fallback.sbatch
 ```
 
-CPA data preparation uses 6-hour LINCS Level 5 z-scores, `trt_cp` compound profiles, and vehicle controls recoded as `DMSO`. Drugs are eligible for THP1 imputation when they have a usable canonical SMILES string, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines. Synthetic THP1 query rows use THP1 vehicle-control expression as the basal state, with the target drug and dose encoded in CPA metadata.
+CPA data preparation uses 6-hour LINCS Level 5 z-scores, `trt_cp` compound profiles, and vehicle controls recoded as `DMSO`. Drugs are eligible for THP1 imputation when they have a usable canonical SMILES string, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines. Synthetic THP1 query rows use THP1 vehicle-control expression as the basal state, with the target drug and a nonnegative raw-dose `cpa_dose` encoded for CPA; `log_dose` is retained as metadata.
 
 Two split modes are implemented:
 

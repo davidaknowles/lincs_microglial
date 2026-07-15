@@ -22,6 +22,7 @@ from .lincs_io import (
 
 
 CONTROL_GROUP = "DMSO"
+CPA_DOSE_KEY = "cpa_dose"
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,8 @@ def add_cpa_columns(sig: pd.DataFrame) -> pd.DataFrame:
     out["dose_um"] = dose
     out["log_dose"] = np.where(out["condition_ID"].eq(CONTROL_GROUP), 0.0, np.log10(dose.clip(lower=1e-6)))
     out["log_dose"] = pd.Series(out["log_dose"]).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
+    cpa_dose = np.where(out["condition_ID"].eq(CONTROL_GROUP), 0.0, dose.clip(lower=1e-6))
+    out[CPA_DOSE_KEY] = pd.Series(cpa_dose).replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
     out["cell_type"] = out["cell_id"].astype(str)
     return out
 
@@ -164,6 +167,7 @@ def query_rows(
         row["pert_dose"] = dose
         row["dose_um"] = dose
         row["log_dose"] = float(np.log10(max(dose, 1e-6)))
+        row[CPA_DOSE_KEY] = float(max(dose, 1e-6))
         row["row_kind"] = "query"
         rows.append(row)
     if not rows:
@@ -241,4 +245,3 @@ def write_anndata(prepared: PreparedCpaData, out_h5ad: str | Path, out_eligible:
         out_eligible = Path(out_eligible)
         out_eligible.parent.mkdir(parents=True, exist_ok=True)
         prepared.eligible_drugs.to_csv(out_eligible, sep="\t", index=False)
-

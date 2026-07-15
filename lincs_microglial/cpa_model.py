@@ -8,7 +8,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from .cpa_prep import CONTROL_GROUP
+from .cpa_prep import CONTROL_GROUP, CPA_DOSE_KEY
 
 
 def ensure_cpa_compat() -> None:
@@ -21,11 +21,12 @@ def setup_cpa_anndata(adata):
     ensure_cpa_compat()
     import cpa
 
+    dosage_key = CPA_DOSE_KEY if CPA_DOSE_KEY in adata.obs else "log_dose"
     cpa.CPA.setup_anndata(
         adata,
         perturbation_key="condition_ID",
         control_group=CONTROL_GROUP,
-        dosage_key="log_dose",
+        dosage_key=dosage_key,
         smiles_key="smiles_rdkit",
         is_count_data=False,
         categorical_covariate_keys=["cell_type"],
@@ -145,7 +146,7 @@ def predictions_to_target_long(
     sub = pred[:, genes]
     x = np.asarray(sub.X, dtype=float)
     frames = []
-    meta_cols = ["pert_id", "pert_iname", "condition_ID", "cell_id", "pert_dose", "log_dose"]
+    meta_cols = ["pert_id", "pert_iname", "condition_ID", "cell_id", "pert_dose", "dose_um", "log_dose", CPA_DOSE_KEY]
     meta_cols = [c for c in meta_cols if c in sub.obs.columns]
     for j, gene in enumerate(sub.var_names.astype(str)):
         frame = sub.obs[meta_cols].copy()
