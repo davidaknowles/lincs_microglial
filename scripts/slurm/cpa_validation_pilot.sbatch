@@ -18,7 +18,7 @@ python scripts/prepare_cpa_lincs.py \
   --mode validation \
   --gene-mode pilot \
   --out-h5ad data/processed/cpa/cpa_lincs_validation_pilot.h5ad \
-  --out-eligible data/processed/cpa/cpa_lincs_eligible_drugs.tsv
+  --out-eligible data/processed/cpa/cpa_lincs_validation_pilot_eligible_drugs.tsv
 
 python scripts/train_cpa_lincs.py \
   --h5ad data/processed/cpa/cpa_lincs_validation_pilot.h5ad \
