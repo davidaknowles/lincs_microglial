@@ -9,6 +9,14 @@ import _bootstrap  # noqa: F401
 from lincs_microglial.cpa_model import predict_query_rows
 
 
+def parse_bool(value: str) -> bool:
+    if value.lower() in {"1", "true", "yes", "y"}:
+        return True
+    if value.lower() in {"0", "false", "no", "n"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Expected boolean value, got {value!r}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir", required=True)
@@ -18,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--targets", default="data/processed/protective_expression_gene_summary.tsv")
     parser.add_argument("--response-source", default="final_cpa_unknown_prediction")
     parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--use-rdkit-embeddings", type=parse_bool, default=True)
     parser.add_argument("--cpu", action="store_true")
     return parser.parse_args()
 
@@ -33,6 +42,7 @@ def main() -> None:
         response_source=args.response_source,
         batch_size=args.batch_size,
         use_gpu=not args.cpu,
+        use_rdkit_embeddings=args.use_rdkit_embeddings,
     )
     print(f"Wrote CPA predictions: {args.out_h5ad}")
     print(f"Wrote target-gene prediction table: {args.out_target_long}")

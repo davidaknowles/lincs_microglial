@@ -64,7 +64,7 @@ Run the validation pilot:
 sbatch scripts/slurm/cpa_validation_pilot.sbatch
 ```
 
-Run the final all-gene model:
+Run the original SMILES/RDKit final all-gene model:
 
 ```bash
 sbatch scripts/slurm/cpa_final_full.sbatch
@@ -76,7 +76,17 @@ If the all-gene model is not feasible after lowering batch size, run the landmar
 sbatch scripts/slurm/cpa_final_landmark_fallback.sbatch
 ```
 
-CPA data preparation uses 6-hour LINCS Level 5 z-scores, `trt_cp` compound profiles, and vehicle controls recoded as `DMSO`. Drugs are eligible for THP1 imputation when they have a usable canonical SMILES string, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines. Synthetic THP1 query rows use THP1 vehicle-control expression as the basal state, with the target drug and a nonnegative raw-dose `cpa_dose` encoded for CPA; `log_dose` is retained as metadata.
+Run the no-SMILES learned-embedding workflow modeled after the original CPA L1000 analysis:
+
+```bash
+sbatch scripts/slurm/cpa_nosmiles_smoke.sbatch
+sbatch scripts/slurm/cpa_nosmiles_top1000_reproduce.sbatch
+sbatch scripts/slurm/cpa_nosmiles_top2000_final_allgenes.sbatch
+```
+
+CPA data preparation uses LINCS Level 5 z-scores, `trt_cp` compound profiles, and vehicle controls recoded as `DMSO`. The original SMILES workflow uses 6-hour profiles and requires usable canonical SMILES, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines. The no-SMILES workflow uses learned perturbation embeddings instead of RDKit embeddings, selects drugs by non-THP1 profile count, and therefore can include compounds without SMILES. Synthetic THP1 query rows use THP1 vehicle-control expression as the basal state, with the target drug and a nonnegative raw-dose `cpa_dose` encoded for CPA; `log_dose` is retained as metadata.
+
+The original CPA L1000 paper analysis used 978 measured landmark genes and learned drug embeddings. The local no-SMILES reproduction follows that design with the local GSE92742 release, where the available treatment metadata has 71 cell lines rather than the paper notebook's 82-cell-line prepared object.
 
 Two split modes are implemented:
 
@@ -84,6 +94,8 @@ Two split modes are implemented:
 - Final mode trains with all observed THP1 perturbations and predicts only eligible drugs without observed THP1 compound profiles.
 
 The default final attempt trains CPA on all 12,328 LINCS genes. If this is infeasible, the fallback trains CPA on measured L1000 landmark genes and then applies a ridge landmark-to-all-gene imputation model fit from observed LINCS signatures. Fallback outputs label genes as landmark-measured or post-CPA-imputed.
+
+The no-SMILES final workflow always trains CPA on 978 measured landmark genes first, then imputes the THP1 predictions to all 12,328 LINCS genes with the same ridge landmark-to-all-gene model before ISOMIGA ranking.
 
 After CPA prediction, `scripts/rank_cpa_drugs_by_isomiga.py` combines observed and predicted THP1 responses with ISOMIGA coloc targets. Observed THP1 responses are preferred when both observed and predicted responses exist. Drugs are ranked by the simple count of matched ISOMIGA genes moved in the protective direction:
 

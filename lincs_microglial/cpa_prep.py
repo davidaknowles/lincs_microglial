@@ -53,7 +53,12 @@ def eligible_drug_table(
     min_non_thp1_signatures: int = 20,
     min_non_thp1_cell_lines: int = 3,
     thp1_cell_id: str = "THP1",
+    require_smiles: bool = True,
+    drug_selection: str = "coverage",
+    top_n_drugs: int | None = None,
 ) -> pd.DataFrame:
+    if drug_selection not in {"coverage", "top-n"}:
+        raise ValueError("drug_selection must be 'coverage' or 'top-n'")
     trt = sig[sig["pert_type"].eq("trt_cp")].copy()
     non = trt[~trt["cell_id"].eq(thp1_cell_id)]
     grouped = (
@@ -74,12 +79,21 @@ def eligible_drug_table(
     out[["n_thp1_signatures", "n_thp1_doses"]] = out[["n_thp1_signatures", "n_thp1_doses"]].fillna(0).astype(int)
     out["has_thp1_observed"] = out["n_thp1_signatures"].gt(0)
     out["has_smiles"] = out["canonical_smiles"].notna()
-    out["eligible"] = (
-        out["has_smiles"]
-        & out["n_non_thp1_signatures"].ge(min_non_thp1_signatures)
-        & out["n_non_thp1_cell_lines"].ge(min_non_thp1_cell_lines)
+    out = out.sort_values(["n_non_thp1_signatures", "n_non_thp1_cell_lines", "pert_id"], ascending=[False, False, True])
+    out["non_thp1_profile_rank"] = np.arange(1, len(out) + 1)
+    coverage_eligible = (
+        out["n_non_thp1_signatures"].ge(min_non_thp1_signatures) & out["n_non_thp1_cell_lines"].ge(min_non_thp1_cell_lines)
     )
-    return out.sort_values(["eligible", "n_non_thp1_signatures"], ascending=[False, False])
+    if drug_selection == "top-n":
+        if top_n_drugs is None or top_n_drugs <= 0:
+            raise ValueError("top_n_drugs must be positive when drug_selection == 'top-n'")
+        eligible = out["non_thp1_profile_rank"].le(top_n_drugs)
+    else:
+        eligible = coverage_eligible
+    if require_smiles:
+        eligible &= out["has_smiles"]
+    out["eligible"] = eligible
+    return out.sort_values(["eligible", "n_non_thp1_signatures", "n_non_thp1_cell_lines", "pert_id"], ascending=[False, False, False, True])
 
 
 def first_nonmissing(values: pd.Series) -> str | float:
@@ -107,12 +121,28 @@ def assign_splits(
     thp1_cell_id: str = "THP1",
     valid_fraction: float = 0.1,
     seed: int = 1,
+    split_strategy: str = "thp1",
 ) -> pd.Series:
     rng = np.random.default_rng(seed)
     split = pd.Series("train", index=obs.index, dtype=object)
     is_query = obs["row_kind"].eq("query")
-    is_thp1_trt = obs["cell_id"].eq(thp1_cell_id) & obs["pert_type"].eq("trt_cp") & ~is_query
     split.loc[is_query] = "query"
+    if split_strategy == "paper":
+        treated = obs["pert_type"].eq("trt_cp") & ~is_query
+        top_conditions = obs.loc[treated, "condition_ID"].value_counts().index[1:50]
+        ood_pool = obs.index[treated & obs["condition_ID"].isin(top_conditions)].to_numpy()
+        if len(ood_pool):
+            n_ood = max(1, int(round(len(ood_pool) * 0.1)))
+            split.loc[rng.choice(ood_pool, size=min(n_ood, len(ood_pool)), replace=False)] = "ood"
+        test_pool = obs.index[split.eq("train") & ~is_query].to_numpy()
+        if len(test_pool):
+            n_test = max(1, int(round(len(test_pool) * 0.16)))
+            split.loc[rng.choice(test_pool, size=min(n_test, len(test_pool)), replace=False)] = "test"
+        return split
+    if split_strategy != "thp1":
+        raise ValueError("split_strategy must be 'thp1' or 'paper'")
+
+    is_thp1_trt = obs["cell_id"].eq(thp1_cell_id) & obs["pert_type"].eq("trt_cp") & ~is_query
     if mode == "validation":
         split.loc[is_thp1_trt] = "ood"
     elif mode == "final":
@@ -162,7 +192,7 @@ def query_rows(
         row["cell_type"] = thp1_cell_id
         row["condition_ID"] = drug.pert_id
         row["canonical_smiles"] = drug.canonical_smiles
-        row["smiles_rdkit"] = drug.canonical_smiles
+        row["smiles_rdkit"] = "" if pd.isna(drug.canonical_smiles) else drug.canonical_smiles
         dose = dose_lookup.get(drug.pert_id, 10.0)
         row["pert_dose"] = dose
         row["dose_um"] = dose
@@ -183,22 +213,35 @@ def prepare_cpa_data(
     targets: str | Path | None = "data/processed/protective_expression_gene_summary.tsv",
     mode: str = "validation",
     gene_mode: str = "pilot",
-    time_hours: float = 6,
+    time_hours: float | None = 6,
     min_non_thp1_signatures: int = 20,
     min_non_thp1_cell_lines: int = 3,
+    require_smiles: bool = True,
+    drug_selection: str = "coverage",
+    top_n_drugs: int | None = None,
     thp1_cell_id: str = "THP1",
     seed: int = 1,
     chunk_size: int = 2048,
+    split_strategy: str = "thp1",
 ) -> PreparedCpaData:
     sig = read_sig_info(sig_info)
     pert = read_pert_info(pert_info)
     sig = add_drug_metadata(sig, pert)
-    sig = sig[sig["pert_time"].eq(time_hours)].copy()
+    if time_hours is not None:
+        sig = sig[sig["pert_time"].eq(time_hours)].copy()
     is_control = sig["pert_type"].str.startswith("ctl_vehicle")
     is_trt = sig["pert_type"].eq("trt_cp")
     sig = sig[is_control | is_trt].copy()
 
-    eligible = eligible_drug_table(sig, min_non_thp1_signatures, min_non_thp1_cell_lines, thp1_cell_id)
+    eligible = eligible_drug_table(
+        sig,
+        min_non_thp1_signatures=min_non_thp1_signatures,
+        min_non_thp1_cell_lines=min_non_thp1_cell_lines,
+        thp1_cell_id=thp1_cell_id,
+        require_smiles=require_smiles,
+        drug_selection=drug_selection,
+        top_n_drugs=top_n_drugs,
+    )
     eligible_ids = set(eligible.loc[eligible["eligible"], "pert_id"])
     keep = sig["pert_type"].str.startswith("ctl_vehicle") | sig["pert_id"].isin(eligible_ids)
     obs = sig.loc[keep].copy()
@@ -206,7 +249,7 @@ def prepare_cpa_data(
     obs = add_cpa_columns(obs)
     q = query_rows(obs, eligible, mode=mode, thp1_cell_id=thp1_cell_id)
     obs = pd.concat([obs, q], ignore_index=True)
-    obs["split"] = assign_splits(obs, mode=mode, thp1_cell_id=thp1_cell_id, seed=seed)
+    obs["split"] = assign_splits(obs, mode=mode, thp1_cell_id=thp1_cell_id, seed=seed, split_strategy=split_strategy)
 
     observed_obs = obs[obs["row_kind"].eq("observed")].copy()
     target_genes = read_target_genes(targets)

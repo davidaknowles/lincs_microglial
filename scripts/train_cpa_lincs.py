@@ -9,6 +9,14 @@ import _bootstrap  # noqa: F401
 from lincs_microglial.cpa_model import train_cpa
 
 
+def parse_bool(value: str) -> bool:
+    if value.lower() in {"1", "true", "yes", "y"}:
+        return True
+    if value.lower() in {"0", "false", "no", "n"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Expected boolean value, got {value!r}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--h5ad", required=True)
@@ -20,6 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--adv-lr", type=float, default=1e-4)
     parser.add_argument("--doser-lr", type=float, default=1e-4)
+    parser.add_argument("--use-rdkit-embeddings", type=parse_bool, default=True)
     parser.add_argument("--cpu", action="store_true")
     return parser.parse_args()
 
@@ -35,6 +44,7 @@ def main() -> None:
         check_val_every_n_epoch=args.check_val_every_n_epoch,
         early_stopping_patience=args.early_stopping_patience,
         plan_kwargs={"lr": args.lr, "adv_lr": args.adv_lr, "doser_lr": args.doser_lr},
+        use_rdkit_embeddings=args.use_rdkit_embeddings,
     )
     print(f"Wrote CPA model: {args.out_dir}")
 

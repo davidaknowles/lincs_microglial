@@ -29,6 +29,14 @@ Model setup:
 - Drug eligibility requires usable SMILES, at least 20 non-THP1 signatures, and at least 3 non-THP1 cell lines.
 - CPA uses `condition_ID`, nonnegative raw-dose `cpa_dose`, `cell_type`, and RDKit embeddings from canonical SMILES. `log_dose` is retained as metadata but is not passed to CPA's `logsigm` doser.
 
+No-SMILES extension:
+
+- The original CPA L1000 paper analysis used learned perturbation embeddings on 978 measured L1000 landmark genes. Its released notebook shows an AnnData object with 199,620 profiles, 978 genes, 1,001 conditions including `DMSO`, and 82 cell lines.
+- The local GSE92742 metadata has 71 treatment cell lines, so the no-SMILES reproduction uses the local release rather than the exact prepared paper object.
+- `--require-smiles false` removes the SMILES eligibility gate and `--use-rdkit-embeddings false` trains learned categorical drug embeddings.
+- `--drug-selection top-n` selects drugs deterministically by non-THP1 profile count, with stable tie-breaking by cell-line count and perturbation ID.
+- The top-1,000 job is the paper-design reproduction/validation stage; the top-2,000 job is the expanded final THP1 imputation stage.
+
 Split strategy:
 
 - Validation model: all observed THP1 compound perturbations are held out as `ood`; THP1 controls are retained.
@@ -38,6 +46,7 @@ Gene strategy:
 
 - First attempt: all 12,328 LINCS genes.
 - If the all-gene run is infeasible, train CPA on landmark genes, then fit a ridge landmark-to-all-gene imputation model from observed LINCS signatures and apply it to CPA landmark predictions.
+- For the no-SMILES top-2,000 final model, CPA is trained on 978 landmarks for paper alignment and feasibility, then all THP1 predictions are imputed to all 12,328 genes before ISOMIGA ranking.
 
 Ranking after CPA:
 

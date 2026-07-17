@@ -17,20 +17,23 @@ def ensure_cpa_compat() -> None:
         sys.path.insert(0, str(compat))
 
 
-def setup_cpa_anndata(adata):
+def setup_cpa_anndata(adata, use_rdkit_embeddings: bool = True):
     ensure_cpa_compat()
     import cpa
 
     dosage_key = CPA_DOSE_KEY if CPA_DOSE_KEY in adata.obs else "log_dose"
-    cpa.CPA.setup_anndata(
-        adata,
-        perturbation_key="condition_ID",
-        control_group=CONTROL_GROUP,
-        dosage_key=dosage_key,
-        smiles_key="smiles_rdkit",
-        is_count_data=False,
-        categorical_covariate_keys=["cell_type"],
-    )
+    setup_kwargs = {
+        "perturbation_key": "condition_ID",
+        "control_group": CONTROL_GROUP,
+        "dosage_key": dosage_key,
+        "is_count_data": False,
+        "categorical_covariate_keys": ["cell_type"],
+    }
+    if use_rdkit_embeddings:
+        setup_kwargs["smiles_key"] = "smiles_rdkit"
+    else:
+        cpa.CPA.pert_smiles_map = None
+    cpa.CPA.setup_anndata(adata, **setup_kwargs)
     return adata
 
 
@@ -61,13 +64,14 @@ def train_cpa(
     early_stopping_patience: int = 10,
     hyperparams: dict | None = None,
     plan_kwargs: dict | None = None,
+    use_rdkit_embeddings: bool = True,
 ):
     ensure_cpa_compat()
     import scanpy as sc
     import cpa
 
     adata = sc.read_h5ad(h5ad)
-    setup_cpa_anndata(adata)
+    setup_cpa_anndata(adata, use_rdkit_embeddings=use_rdkit_embeddings)
     params = default_hyperparams()
     if hyperparams:
         params.update(hyperparams)
@@ -77,7 +81,7 @@ def train_cpa(
         train_split="train",
         valid_split="test",
         test_split="ood",
-        use_rdkit_embeddings=True,
+        use_rdkit_embeddings=use_rdkit_embeddings,
         **params,
     )
     model.train(
@@ -92,13 +96,18 @@ def train_cpa(
     return model
 
 
-def load_cpa(model_dir: str | Path, h5ad: str | Path, use_gpu: bool | str | int = True):
+def load_cpa(
+    model_dir: str | Path,
+    h5ad: str | Path,
+    use_gpu: bool | str | int = True,
+    use_rdkit_embeddings: bool = True,
+):
     ensure_cpa_compat()
     import scanpy as sc
     import cpa
 
     adata = sc.read_h5ad(h5ad)
-    setup_cpa_anndata(adata)
+    setup_cpa_anndata(adata, use_rdkit_embeddings=use_rdkit_embeddings)
     return cpa.CPA.load(str(model_dir), adata=adata, use_gpu=use_gpu), adata
 
 
@@ -111,10 +120,11 @@ def predict_query_rows(
     response_source: str = "final_cpa_unknown_prediction",
     batch_size: int = 512,
     use_gpu: bool | str | int = True,
+    use_rdkit_embeddings: bool = True,
 ) -> None:
     import anndata as ad
 
-    model, adata = load_cpa(model_dir, h5ad, use_gpu=use_gpu)
+    model, adata = load_cpa(model_dir, h5ad, use_gpu=use_gpu, use_rdkit_embeddings=use_rdkit_embeddings)
     query_idx = np.where(adata.obs["split"].astype(str).eq("query"))[0]
     if len(query_idx) == 0:
         raise ValueError("No rows with split == 'query' found in CPA AnnData")
