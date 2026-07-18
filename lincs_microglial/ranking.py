@@ -58,14 +58,21 @@ def protective_count_rank(
     targets: pd.DataFrame,
     drug_gene: pd.DataFrame,
     min_genes: int = 2,
+    min_abs_z: float = 0.0,
     repurposing_drugs: str | Path | None = "data/external/repurposing_hub/repurposing_drugs_20200324.txt",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     target_cols = [c for c in TARGET_COLS if c in targets.columns]
     merged = drug_gene.merge(targets[target_cols], on="gene_name", how="inner")
     merged["protective_push_z"] = merged["mean_z"] * merged["protective_expression_direction"]
     merged["pushes_protective"] = merged["protective_push_z"].gt(0)
+    merged["passes_abs_z"] = merged["mean_z"].abs().ge(min_abs_z)
+    merged["significant_protective"] = merged["pushes_protective"] & merged["passes_abs_z"]
+    merged["significant_opposing"] = merged["protective_push_z"].lt(0) & merged["passes_abs_z"]
     merged["sum_abs_z_protective_component"] = np.where(
         merged["pushes_protective"], merged["mean_z"].abs(), 0.0
+    )
+    merged["sum_abs_z_sig_protective_component"] = np.where(
+        merged["significant_protective"], merged["mean_z"].abs(), 0.0
     )
     group_cols = ["pert_id", "pert_iname", "response_source"]
     drug = (
@@ -74,12 +81,18 @@ def protective_count_rank(
             n_matched_isomiga_genes=("gene_name", "nunique"),
             n_protective_genes=("pushes_protective", "sum"),
             n_opposing_genes=("pushes_protective", lambda x: int((~x).sum())),
+            n_sig_protective_genes=("significant_protective", "sum"),
+            n_sig_opposing_genes=("significant_opposing", "sum"),
             frac_protective_genes=("pushes_protective", "mean"),
+            frac_sig_protective_genes=("significant_protective", "mean"),
             sum_abs_z_protective=("sum_abs_z_protective_component", "sum"),
+            sum_abs_z_sig_protective=("sum_abs_z_sig_protective_component", "sum"),
             mean_lincs_z_matched=("mean_z", "mean"),
             min_n_signatures=("n_signatures", "min"),
         )
     )
+    drug["net_sig_protective_genes"] = drug["n_sig_protective_genes"] - drug["n_sig_opposing_genes"]
+    drug["min_abs_z_threshold"] = min_abs_z
     drug = drug[drug["n_matched_isomiga_genes"].ge(min_genes)].copy()
     rep = load_repurposing_annotations(repurposing_drugs)
     if not rep.empty:
@@ -91,7 +104,16 @@ def protective_count_rank(
         else:
             drug[col] = drug[col].fillna("not annotated" if col != "indication" else "")
     drug = drug.sort_values(
-        ["n_protective_genes", "frac_protective_genes", "sum_abs_z_protective", "n_matched_isomiga_genes"],
+        [
+            "n_sig_protective_genes",
+            "frac_sig_protective_genes",
+            "sum_abs_z_sig_protective",
+            "net_sig_protective_genes",
+            "n_protective_genes",
+            "frac_protective_genes",
+            "sum_abs_z_protective",
+            "n_matched_isomiga_genes",
+        ],
         ascending=False,
     )
     merged = merged.sort_values(["pert_iname", "protective_push_z"], ascending=[True, False])
@@ -104,6 +126,7 @@ def write_rankings(
     predicted_gene_path: str | Path | None,
     out_prefix: str | Path,
     min_genes: int = 2,
+    min_abs_z: float = 0.0,
     repurposing_drugs: str | Path | None = "data/external/repurposing_hub/repurposing_drugs_20200324.txt",
 ) -> None:
     targets = pd.read_csv(targets_path, sep="\t")
@@ -120,7 +143,12 @@ def write_rankings(
     ]:
         if frame.empty:
             continue
-        drug, gene = protective_count_rank(targets, frame, min_genes=min_genes, repurposing_drugs=repurposing_drugs)
+        drug, gene = protective_count_rank(
+            targets,
+            frame,
+            min_genes=min_genes,
+            min_abs_z=min_abs_z,
+            repurposing_drugs=repurposing_drugs,
+        )
         drug.to_csv(out_prefix.with_name(f"{out_prefix.name}_{label}_drug_scores.tsv"), sep="\t", index=False)
         gene.to_csv(out_prefix.with_name(f"{out_prefix.name}_{label}_drug_gene_scores.tsv"), sep="\t", index=False)
-

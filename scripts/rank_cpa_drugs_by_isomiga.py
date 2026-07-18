@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-prefix", default="data/processed/cpa/isomiga_cpa_protective_count")
     parser.add_argument("--repurposing-drugs", default="data/external/repurposing_hub/repurposing_drugs_20200324.txt")
     parser.add_argument("--min-genes", type=int, default=2)
+    parser.add_argument("--min-abs-z", type=float, default=0.0)
     return parser.parse_args()
 
 
@@ -28,6 +29,7 @@ def main() -> None:
         predicted_gene_path=args.predicted_gene,
         out_prefix=args.out_prefix,
         min_genes=args.min_genes,
+        min_abs_z=args.min_abs_z,
         repurposing_drugs=args.repurposing_drugs,
     )
     print(f"Wrote observed/predicted/combined rankings with prefix: {args.out_prefix}")

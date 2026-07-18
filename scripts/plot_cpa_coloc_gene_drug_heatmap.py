@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-png", default="results/figures/cpa_nosmiles_top30_coloc_gene_drug_heatmap.png")
     parser.add_argument("--plot-data", default="data/processed/cpa/cpa_nosmiles_top30_coloc_gene_drug_heatmap_data.tsv")
     parser.add_argument("--top-n", type=int, default=30)
+    parser.add_argument("--min-abs-z", type=float, default=0.0)
     return parser.parse_args()
 
 
@@ -78,7 +79,12 @@ def main() -> None:
         plot_df["protective_expression_direction"], errors="coerce"
     )
     plot_df["protective_push_z"] = plot_df["mean_z"] * plot_df["protective_expression_direction"]
-    protective_df = plot_df[plot_df["protective_push_z"].gt(0)].copy()
+    if args.min_abs_z > 0:
+        protective_df = plot_df[plot_df["protective_push_z"].ge(args.min_abs_z)].copy()
+        title_suffix = f" (|z| >= {args.min_abs_z:g})"
+    else:
+        protective_df = plot_df[plot_df["protective_push_z"].gt(0)].copy()
+        title_suffix = ""
 
     gene_meta = (
         plot_df[["gene_name", "mr_ivw_beta", "protective_direction_label"]]
@@ -111,7 +117,7 @@ def main() -> None:
             x="Top ranked drug",
             y="ISOMIGA coloc gene, sorted by naive MR beta",
             fill="Drug effect\non expression\n(LINCS z)",
-            title="Top CPA/LINCS drug effects on ISOMIGA AD coloc genes",
+            title=f"Top CPA/LINCS drug effects on ISOMIGA AD coloc genes{title_suffix}",
         )
         + theme_bw()
         + theme(
