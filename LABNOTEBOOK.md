@@ -57,7 +57,7 @@ Ranking after CPA:
 - `docs/cpa_nosmiles_top30_biology_review.tsv` reviews the top 30 primary ranked drugs. The current top 30 are all observed THP1 profiles. The most biologically interpretable hits are sirolimus, NFkB-activation-inhibitor-II, triptolide, CI-976, lovastatin, nifedipine, NSC-23766, and selected kinase/prenylation pathway tools; several high-count hits lack MOA annotations and should be treated as signature leads.
 - `scripts/plot_cpa_coloc_gene_drug_heatmap.py` generates `results/figures/cpa_nosmiles_top30_coloc_gene_drug_heatmap.pdf`, showing top ranked drugs across ISOMIGA coloc genes sorted by naive MR beta. Tile fill is THP1 expression z-score and black dots mark concordance with the protective expression direction.
 - `scripts/rank_cpa_drugs_by_isomiga.py --min-abs-z 1` generated the `isomiga_cpa_nosmiles_top2000_abs1_protective_count` tables. This ranking sorts first by significant protective genes, where a significant gene has `abs(mean_z) >= 1` and the protective sign. The top 30 remain observed THP1 drugs; predicted-only CPA target-gene effects are all below `abs(mean_z) = 1`, so they have zero significant protective genes under this threshold.
-- `results/figures/cpa_nosmiles_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the thresholded top 30. Dots indicate protective effects passing `abs(mean_z) >= 1`; tiles retain the continuous expression z-score.
+- `results/figures/cpa_nosmiles_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the thresholded top 30. Ticks indicate protective effects passing `abs(mean_z) >= 1`, crosses indicate thresholded opposing effects, and tiles retain the continuous expression z-score.
 
 Implementation note:
 

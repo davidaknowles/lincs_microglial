@@ -11,7 +11,7 @@ import pandas as pd
 from plotnine import (
     aes,
     element_text,
-    geom_point,
+    geom_text,
     geom_tile,
     ggplot,
     labs,
@@ -80,10 +80,12 @@ def main() -> None:
     )
     plot_df["protective_push_z"] = plot_df["mean_z"] * plot_df["protective_expression_direction"]
     if args.min_abs_z > 0:
-        protective_df = plot_df[plot_df["protective_push_z"].ge(args.min_abs_z)].copy()
+        marker_df = plot_df[plot_df["protective_push_z"].abs().ge(args.min_abs_z)].copy()
+        marker_df["marker"] = np.where(marker_df["protective_push_z"].gt(0), "✓", "×")
         title_suffix = f" (|z| >= {args.min_abs_z:g})"
     else:
-        protective_df = plot_df[plot_df["protective_push_z"].gt(0)].copy()
+        marker_df = plot_df[plot_df["protective_push_z"].gt(0)].copy()
+        marker_df["marker"] = "•"
         title_suffix = ""
 
     gene_meta = (
@@ -98,9 +100,9 @@ def main() -> None:
     plot_df["gene_label"] = plot_df["gene_name"].map(label_map)
     plot_df["gene_label"] = pd.Categorical(plot_df["gene_label"], categories=gene_order, ordered=True)
     plot_df["drug_label"] = pd.Categorical(plot_df["drug_label"], categories=drug_order, ordered=True)
-    protective_df["gene_label"] = protective_df["gene_name"].map(label_map)
-    protective_df["gene_label"] = pd.Categorical(protective_df["gene_label"], categories=gene_order, ordered=True)
-    protective_df["drug_label"] = pd.Categorical(protective_df["drug_label"], categories=drug_order, ordered=True)
+    marker_df["gene_label"] = marker_df["gene_name"].map(label_map)
+    marker_df["gene_label"] = pd.Categorical(marker_df["gene_label"], categories=gene_order, ordered=True)
+    marker_df["drug_label"] = pd.Categorical(marker_df["drug_label"], categories=drug_order, ordered=True)
 
     out_data = Path(args.plot_data)
     out_data.parent.mkdir(parents=True, exist_ok=True)
@@ -111,7 +113,7 @@ def main() -> None:
     plot = (
         ggplot(plot_df, aes("drug_label", "gene_label", fill="mean_z"))
         + geom_tile(color="#f5f5f5", size=0.25)
-        + geom_point(protective_df, size=0.9, color="#111111")
+        + geom_text(marker_df, aes(label="marker"), size=6, color="#111111")
         + scale_fill_gradient2(low="#2166ac", mid="#f7f7f7", high="#b2182b", midpoint=0, limits=(-max_abs, max_abs))
         + labs(
             x="Top ranked drug",
@@ -121,13 +123,13 @@ def main() -> None:
         )
         + theme_bw()
         + theme(
-            figure_size=(8.2, 4.2),
-            axis_title=element_text(size=9),
-            axis_text_x=element_text(rotation=45, ha="right", size=5.5),
-            axis_text_y=element_text(size=7),
-            legend_title=element_text(size=8),
-            legend_text=element_text(size=7),
-            plot_title=element_text(size=10),
+            figure_size=(7.2, 3.7),
+            axis_title=element_text(size=8),
+            axis_text_x=element_text(rotation=45, ha="right", size=5),
+            axis_text_y=element_text(size=6.5),
+            legend_title=element_text(size=7),
+            legend_text=element_text(size=6.5),
+            plot_title=element_text(size=9),
         )
     )
 
