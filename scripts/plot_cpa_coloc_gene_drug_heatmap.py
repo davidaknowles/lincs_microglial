@@ -15,7 +15,6 @@ from plotnine import (
     geom_tile,
     ggplot,
     labs,
-    scale_color_manual,
     scale_fill_gradient2,
     theme,
     theme_bw,
@@ -41,8 +40,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def drug_label(row: pd.Series) -> str:
-    source = "obs" if row["response_source"] == "observed_thp1" else "CPA"
-    return f"{row['pert_iname']} [{source}]"
+    return str(row["pert_iname"])
 
 
 def main() -> None:
@@ -80,23 +78,23 @@ def main() -> None:
         plot_df["protective_expression_direction"], errors="coerce"
     )
     plot_df["protective_push_z"] = plot_df["mean_z"] * plot_df["protective_expression_direction"]
-    plot_df["match"] = np.where(plot_df["protective_push_z"].gt(0), "protective", "opposing")
+    protective_df = plot_df[plot_df["protective_push_z"].gt(0)].copy()
 
     gene_meta = (
         plot_df[["gene_name", "mr_ivw_beta", "protective_direction_label"]]
         .drop_duplicates("gene_name")
         .sort_values("mr_ivw_beta", ascending=True)
     )
-    gene_meta["gene_label"] = [
-        f"{row.gene_name} ({row.mr_ivw_beta:+.2f}; {row.protective_direction_label})"
-        for row in gene_meta.itertuples()
-    ]
+    gene_meta["gene_label"] = [f"{row.gene_name} ({row.mr_ivw_beta:+.2f})" for row in gene_meta.itertuples()]
     gene_order = gene_meta["gene_label"].tolist()
     label_map = dict(zip(gene_meta["gene_name"], gene_meta["gene_label"]))
 
     plot_df["gene_label"] = plot_df["gene_name"].map(label_map)
     plot_df["gene_label"] = pd.Categorical(plot_df["gene_label"], categories=gene_order, ordered=True)
     plot_df["drug_label"] = pd.Categorical(plot_df["drug_label"], categories=drug_order, ordered=True)
+    protective_df["gene_label"] = protective_df["gene_name"].map(label_map)
+    protective_df["gene_label"] = pd.Categorical(protective_df["gene_label"], categories=gene_order, ordered=True)
+    protective_df["drug_label"] = pd.Categorical(protective_df["drug_label"], categories=drug_order, ordered=True)
 
     out_data = Path(args.plot_data)
     out_data.parent.mkdir(parents=True, exist_ok=True)
@@ -107,27 +105,23 @@ def main() -> None:
     plot = (
         ggplot(plot_df, aes("drug_label", "gene_label", fill="mean_z"))
         + geom_tile(color="#f5f5f5", size=0.25)
-        + geom_point(aes(color="match"), size=0.8)
+        + geom_point(protective_df, size=0.9, color="#111111")
         + scale_fill_gradient2(low="#2166ac", mid="#f7f7f7", high="#b2182b", midpoint=0, limits=(-max_abs, max_abs))
-        + scale_color_manual(values={"protective": "#111111", "opposing": "#d9d9d9"})
         + labs(
             x="Top ranked drug",
             y="ISOMIGA coloc gene, sorted by naive MR beta",
             fill="Drug effect\non expression\n(LINCS z)",
-            color="Direction",
             title="Top CPA/LINCS drug effects on ISOMIGA AD coloc genes",
-            caption="Rows: positive MR beta means increased expression is genetically associated with higher AD risk. Black dots mark drug-gene effects in the protective direction.",
         )
         + theme_bw()
         + theme(
-            figure_size=(9.5, 4.8),
+            figure_size=(8.2, 4.2),
             axis_title=element_text(size=9),
-            axis_text_x=element_text(rotation=45, ha="right", size=6),
+            axis_text_x=element_text(rotation=45, ha="right", size=5.5),
             axis_text_y=element_text(size=7),
             legend_title=element_text(size=8),
             legend_text=element_text(size=7),
             plot_title=element_text(size=10),
-            plot_caption=element_text(size=7),
         )
     )
 
