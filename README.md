@@ -113,12 +113,12 @@ Current top-drug tables:
 - `data/processed/cpa/isomiga_cpa_nosmiles_top2000_protective_count_predicted_only_drug_scores.tsv`: CPA-imputed THP1 drugs only.
 - `docs/cpa_nosmiles_top30_biology_review.tsv`: concise biology review for the top 30 primary ranked drugs.
 - `results/figures/cpa_nosmiles_top30_coloc_gene_drug_heatmap.pdf`: heatmap of top ranked drugs by coloc genes. Rows are sorted by naive MR `mr_ivw_beta`; tile color is the drug effect on expression (`mean_z`), and black dots mark gene-drug effects in the genetically protective direction.
-- `data/processed/cpa/isomiga_cpa_nosmiles_top2000_abs1_protective_count_combined_drug_scores.tsv`: sensitivity ranking requiring `abs(mean_z) >= 1` for significant protective/opposing gene counts.
+- `data/processed/cpa/isomiga_cpa_nosmiles_top2000_abs1_protective_count_combined_drug_scores.tsv`: sensitivity ranking requiring `abs(mean_z) >= 1` for significant protective/opposing gene counts. The primary rank is `net_sig_protective_genes = n_sig_protective_genes - n_sig_opposing_genes`.
 - `results/figures/cpa_nosmiles_top30_abs1_coloc_gene_drug_heatmap.pdf`: heatmap from the `abs(mean_z) >= 1` ranking. Tiles still show continuous expression z-scores; ticks mark protective effects passing the absolute z-score threshold, and crosses mark thresholded opposing effects.
 
 The current primary top 30 are all observed THP1 profiles, because observed responses are preferred when both observed and CPA-imputed responses are available. The top biology-aware leads from that table are not necessarily the highest-ranked rows. The most interpretable hits include sirolimus (mTOR/autophagy-lysosome biology), NFkB-activation-inhibitor-II and triptolide (myeloid inflammatory transcription/NF-kB, with toxicity caveats), CI-976 and lovastatin (lipid/cholesterol biology), nifedipine (calcium/vascular and immune signaling), and NSC-23766/FTI-276/kinase inhibitors as pathway tools. Several high-ranked rows have missing MOA or broad stress/cell-cycle annotations and should be treated as signature leads until their compound identity and target biology are reviewed.
 
-The `abs(mean_z) >= 1` sensitivity ranking changes the observed-drug order and promotes stronger single-gene effects. Predicted-only CPA drugs do not enter the top 30 under this threshold because their all-gene imputed ISOMIGA target effects are shrunken: the maximum absolute predicted target-gene `mean_z` is below 1 in the current top-2,000 no-SMILES run.
+The `abs(mean_z) >= 1` sensitivity ranking changes the observed-drug order and promotes drugs with more thresholded protective than opposing gene effects. Predicted-only CPA drugs do not enter the top 30 under this threshold because their all-gene imputed ISOMIGA target effects are shrunken: the maximum absolute predicted target-gene `mean_z` is below 1 in the current top-2,000 no-SMILES run.
 
 ## Gene-drug matching logic
 

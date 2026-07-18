@@ -105,10 +105,10 @@ def protective_count_rank(
             drug[col] = drug[col].fillna("not annotated" if col != "indication" else "")
     drug = drug.sort_values(
         [
+            "net_sig_protective_genes",
             "n_sig_protective_genes",
             "frac_sig_protective_genes",
             "sum_abs_z_sig_protective",
-            "net_sig_protective_genes",
             "n_protective_genes",
             "frac_protective_genes",
             "sum_abs_z_protective",
