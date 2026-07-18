@@ -13,6 +13,7 @@ data/raw/
 # CPA generated artifacts
 data/processed/cpa/*.h5ad
 data/processed/cpa/*.npz
+data/processed/cpa/*.tsv
 results/cpa/
 logs/
 *.ckpt
