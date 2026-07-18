@@ -55,6 +55,7 @@ Ranking after CPA:
 - Drugs are ranked by `n_protective_genes`, the count of matched ISOMIGA genes with LINCS/CPA z-score sign matching the genetic protective direction.
 - The no-SMILES top-2,000 run completed and wrote the primary combined, observed-only, and predicted-only rankings under `data/processed/cpa/`.
 - `docs/cpa_nosmiles_top30_biology_review.tsv` reviews the top 30 primary ranked drugs. The current top 30 are all observed THP1 profiles. The most biologically interpretable hits are sirolimus, NFkB-activation-inhibitor-II, triptolide, CI-976, lovastatin, nifedipine, NSC-23766, and selected kinase/prenylation pathway tools; several high-count hits lack MOA annotations and should be treated as signature leads.
+- `scripts/plot_cpa_coloc_gene_drug_heatmap.py` generates `results/figures/cpa_nosmiles_top30_coloc_gene_drug_heatmap.pdf`, showing top ranked drugs across ISOMIGA coloc genes sorted by naive MR beta. Tile fill is THP1 expression z-score and black dots mark concordance with the protective expression direction.
 
 Implementation note:
 
