@@ -33,6 +33,7 @@ Findings:
 - The combined ranking covers 2,938 perturbation IDs: 1,668 observed and 1,270 CPA-predicted.
 - With `abs(mean_z) >= 1`, 159 drugs have `n_sig_protective_genes > n_sig_opposing_genes`. All 159 are observed; CPA predictions remain below the threshold.
 - `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the updated top 30. Ticks mark protective and crosses mark opposing effects passing the threshold.
+- `scripts/review_cmap2020_top_hits.py` writes `docs/cmap2020_top30_biology_review.tsv`, with protective/opposing driver genes and a reasonableness discussion for each top-30 entry. The current review classifies 14 as plausible with caveats, 9 as likely nonspecific or toxic, and 7 as uninterpretable because identity or pharmacology is unresolved.
 
 ## CPA THP1 response imputation
 

@@ -71,8 +71,11 @@ The `abs(mean_z) >= 1` combined ranking contains 2,938 perturbation IDs: 1,668 o
 The current thresholded outputs are:
 
 - `data/processed/cpa/isomiga_cmap2020_cpa_abs1_protective_count_combined_drug_scores.tsv`
+- `docs/cmap2020_top30_biology_review.tsv`: top-30 score table with threshold-driving genes and a biological reasonableness assessment for every hit.
 - `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf`
 - `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.png`
+
+The review labels hits as `plausible_with_caveats`, `likely_nonspecific_or_toxic`, or `uninterpretable`. These labels are qualitative triage based on known pharmacology, relevance to myeloid/neurodegenerative biology, and whether the expression pattern is consistent with broad stress or cytotoxicity. They are not evidence of efficacy.
 
 ## CPA THP1 imputation
 
