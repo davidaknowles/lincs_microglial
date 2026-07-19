@@ -17,6 +17,23 @@ Current finding summary:
 - BIBR-1532, AS-605240, myriocin, AZD-8055, and triptolide were used as selected biology-aware examples in the preliminary plots.
 - The MR and regression scripts are retained as secondary analyses, but the current CPA extension will rank drugs by simple protective-gene count.
 
+## CMap2020 observed THP1 expansion
+
+The initial observed analysis used GSE92742, which has 376 THP1 compound perturbation IDs. The CMap2020 metadata has 15,814 THP1 compound signatures, 1,667 perturbation IDs, and 1,630 compound names. Thirteen of the 27 ISOMIGA target genes are represented in the 12,328-gene Level 5 matrix.
+
+Implementation:
+
+- `scripts/download_lincs_cmap2020.py` downloads the CMap2020 compound Level 5 matrix and metadata with resumable partial downloads.
+- `scripts/extract_lincs_thp1_targets.py` now accepts both the GSE92742 (`cell_id`, `pert_iname`) and CMap2020 (`cell_iname`, `cmap_name`) metadata schemas.
+- `scripts/combine_lincs_observed_releases.py` uses CMap2020 for overlapping perturbation IDs and retains one observed GSE92742-only drug.
+- Existing no-SMILES CPA predictions were not recomputed. Predictions are retained only for perturbation IDs without an observed response in either release.
+
+Findings:
+
+- The combined ranking covers 2,938 perturbation IDs: 1,668 observed and 1,270 CPA-predicted.
+- With `abs(mean_z) >= 1`, 159 drugs have `n_sig_protective_genes > n_sig_opposing_genes`. All 159 are observed; CPA predictions remain below the threshold.
+- `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the updated top 30. Ticks mark protective and crosses mark opposing effects passing the threshold.
+
 ## CPA THP1 response imputation
 
 The CPA extension is designed to impute THP1 perturbation responses for drugs that have enough LINCS evidence in other cell lines.
@@ -54,7 +71,7 @@ Ranking after CPA:
 - CPA predictions are used for unknown THP1 drug responses.
 - Drugs are ranked by `n_protective_genes`, the count of matched ISOMIGA genes with LINCS/CPA z-score sign matching the genetic protective direction.
 - The no-SMILES top-2,000 run completed and wrote the primary combined, observed-only, and predicted-only rankings under `data/processed/cpa/`.
-- `docs/cpa_nosmiles_top30_biology_review.tsv` reviews the top 30 primary ranked drugs. The current top 30 are all observed THP1 profiles. The most biologically interpretable hits are sirolimus, NFkB-activation-inhibitor-II, triptolide, CI-976, lovastatin, nifedipine, NSC-23766, and selected kinase/prenylation pathway tools; several high-count hits lack MOA annotations and should be treated as signature leads.
+- `docs/cpa_nosmiles_top30_biology_review.tsv` reviews the earlier GSE92742/CPA top 30 and is retained as a historical result. The CMap2020-expanded ranking supersedes it.
 - `scripts/plot_cpa_coloc_gene_drug_heatmap.py` generates `results/figures/cpa_nosmiles_top30_coloc_gene_drug_heatmap.pdf`, showing top ranked drugs across ISOMIGA coloc genes sorted by naive MR beta. Tile fill is THP1 expression z-score and black dots mark concordance with the protective expression direction.
 - `scripts/rank_cpa_drugs_by_isomiga.py --min-abs-z 1` generated the `isomiga_cpa_nosmiles_top2000_abs1_protective_count` tables. This ranking sorts first by `net_sig_protective_genes`, where significant protective and opposing genes require `abs(mean_z) >= 1`. The top 30 remain observed THP1 drugs; predicted-only CPA target-gene effects are all below `abs(mean_z) = 1`, so they have zero significant protective genes under this threshold.
 - `results/figures/cpa_nosmiles_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the thresholded top 30. Ticks indicate protective effects passing `abs(mean_z) >= 1`, crosses indicate thresholded opposing effects, and tiles retain the continuous expression z-score.

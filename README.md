@@ -46,6 +46,34 @@ Steps:
    - Uses weights `1 / MR_se_g^2`.
    - Ranks by the one-sided significance of a protective negative slope, `p(slope < 0)`.
 
+## CMap2020 THP1 expansion
+
+The current observed analysis uses the CMap2020 compound release rather than relying only on GSE92742. CMap2020 contains 15,814 THP1 Level 5 compound signatures across 1,667 perturbation IDs. The extraction averages all available THP1 signatures for each perturbation-gene pair, as in the original observed workflow.
+
+Download and extract CMap2020:
+
+```bash
+python scripts/download_lincs_cmap2020.py
+python scripts/extract_lincs_thp1_targets.py \
+  --gctx data/raw/lincs_cmap2020/level5_beta_trt_cp_n720216x12328.gctx \
+  --sig-info data/raw/lincs_cmap2020/siginfo_beta.txt \
+  --gene-info data/raw/lincs_cmap2020/geneinfo_beta.txt \
+  --out-long data/processed/cmap2020_thp1_target_gene_zscores.tsv.gz \
+  --out-summary data/processed/cmap2020_thp1_drug_gene_summary.tsv \
+  --out-coverage data/processed/cmap2020_lincs_target_gene_coverage.tsv
+python scripts/combine_lincs_observed_releases.py
+```
+
+`combine_lincs_observed_releases.py` prefers CMap2020 for overlapping perturbation IDs and retains one GSE92742-only observed drug. Existing CPA predictions are then used only for IDs absent from both observed releases; CPA was not retrained for this update.
+
+The `abs(mean_z) >= 1` combined ranking contains 2,938 perturbation IDs: 1,668 observed and 1,270 CPA-predicted. Of these, 159 observed drugs have more thresholded protective than opposing gene effects. No CPA-predicted effect reaches the threshold.
+
+The current thresholded outputs are:
+
+- `data/processed/cpa/isomiga_cmap2020_cpa_abs1_protective_count_combined_drug_scores.tsv`
+- `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf`
+- `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.png`
+
 ## CPA THP1 imputation
 
 The CPA extension predicts THP1 drug responses for LINCS compounds that are well represented in other cell lines. It is kept separate from the preliminary observed-only pipeline because CPA has a different Python dependency stack.
@@ -106,7 +134,7 @@ n_protective_genes = count(protective_push_z > 0)
 
 The combined ranking writes observed-only, predicted-only, and combined drug tables under `data/processed/cpa/`.
 
-Current top-drug tables:
+Earlier GSE92742/CPA tables retained for comparison:
 
 - `data/processed/cpa/isomiga_cpa_nosmiles_top2000_protective_count_combined_drug_scores.tsv`: primary combined ranking. Observed THP1 responses are used when available; CPA-imputed THP1 responses fill in drugs without observed THP1 profiles.
 - `data/processed/cpa/isomiga_cpa_nosmiles_top2000_protective_count_observed_only_drug_scores.tsv`: observed THP1 drugs only.
@@ -116,7 +144,7 @@ Current top-drug tables:
 - `data/processed/cpa/isomiga_cpa_nosmiles_top2000_abs1_protective_count_combined_drug_scores.tsv`: sensitivity ranking requiring `abs(mean_z) >= 1` for significant protective/opposing gene counts. The primary rank is `net_sig_protective_genes = n_sig_protective_genes - n_sig_opposing_genes`.
 - `results/figures/cpa_nosmiles_top30_abs1_coloc_gene_drug_heatmap.pdf`: heatmap from the `abs(mean_z) >= 1` ranking. Tiles still show continuous expression z-scores; ticks mark protective effects passing the absolute z-score threshold, and crosses mark thresholded opposing effects.
 
-The current primary top 30 are all observed THP1 profiles, because observed responses are preferred when both observed and CPA-imputed responses are available. The top biology-aware leads from that table are not necessarily the highest-ranked rows. The most interpretable hits include sirolimus (mTOR/autophagy-lysosome biology), NFkB-activation-inhibitor-II and triptolide (myeloid inflammatory transcription/NF-kB, with toxicity caveats), CI-976 and lovastatin (lipid/cholesterol biology), nifedipine (calcium/vascular and immune signaling), and NSC-23766/FTI-276/kinase inhibitors as pathway tools. Several high-ranked rows have missing MOA or broad stress/cell-cycle annotations and should be treated as signature leads until their compound identity and target biology are reviewed.
+The earlier GSE92742 top 30 and biology review are retained as historical outputs. They should not be treated as the current ranking now that measured CMap2020 THP1 responses are available.
 
 The `abs(mean_z) >= 1` sensitivity ranking changes the observed-drug order and promotes drugs with more thresholded protective than opposing gene effects. Predicted-only CPA drugs do not enter the top 30 under this threshold because their all-gene imputed ISOMIGA target effects are shrunken: the maximum absolute predicted target-gene `mean_z` is below 1 in the current top-2,000 no-SMILES run.
 
@@ -288,7 +316,8 @@ Key figures:
 - High-H4 expression coloc rows: 52.
 - Gene-level targets: 27.
 - LINCS-covered target genes: 13.
-- THP1 compound Level 5 signatures: 648 signatures across 371 compound names.
-- Scored compounds with at least two represented target genes: 376 compound IDs.
+- CMap2020 THP1 compound Level 5 signatures: 15,814 signatures across 1,667 compound IDs.
+- Combined scored compounds with at least two represented target genes: 2,938 perturbation IDs.
+- Drugs with more protective than opposing effects at `abs(mean_z) >= 1`: 159.
 - Top-ranked compound by the current metric: BIBR-1532.
-- Selected biology-aware examples plotted in detail: BIBR-1532, AS-605240, myriocin, AZD-8055, and triptolide.
+- The updated top-30 thresholded heatmap is `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf`.

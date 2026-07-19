@@ -67,6 +67,17 @@ def read_gene_info(path: str) -> pd.DataFrame:
 
 def read_sig_info(path: str, cell_id: str, pert_type: str) -> pd.DataFrame:
     sig = pd.read_csv(path, sep="\t", compression="infer", dtype=str)
+    schema_rename = {
+        "cell_iname": "cell_id",
+        "cmap_name": "pert_iname",
+    }
+    schema_rename = {
+        old: new
+        for old, new in schema_rename.items()
+        if old in sig.columns and new not in sig.columns
+    }
+    if schema_rename:
+        sig = sig.rename(columns=schema_rename)
     keep = sig["cell_id"].eq(cell_id) & sig["pert_type"].eq(pert_type)
     sig = sig.loc[keep].copy()
     rename = {}
