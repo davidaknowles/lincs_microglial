@@ -77,6 +77,40 @@ The current thresholded outputs are:
 
 The review labels hits as `plausible_with_caveats`, `likely_nonspecific_or_toxic`, or `uninterpretable`. These labels are qualitative triage based on known pharmacology, relevance to myeloid/neurodegenerative biology, and whether the expression pattern is consistent with broad stress or cytotoxicity. They are not evidence of efficacy.
 
+### Stress/toxicity triage
+
+The recommended observed-hit table applies a simple post-ranking screen intended to remove signatures likely dominated by acute cell stress or cytotoxicity:
+
+```bash
+python scripts/filter_cmap2020_stress_hits.py
+python scripts/plot_cpa_coloc_gene_drug_heatmap.py \
+  --drug-scores data/processed/cpa/isomiga_cmap2020_abs1_stress_filtered_drug_scores.tsv \
+  --gene-scores data/processed/cpa/isomiga_cmap2020_cpa_abs1_protective_count_combined_drug_gene_scores.tsv \
+  --out-pdf results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.pdf \
+  --out-png results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.png \
+  --plot-data data/processed/cpa/cmap2020_stress_filtered_top30_abs1_heatmap_data.tsv \
+  --min-abs-z 1
+python scripts/review_cmap2020_top_hits.py \
+  --drug-scores data/processed/cpa/isomiga_cmap2020_abs1_stress_filtered_drug_scores.tsv \
+  --out docs/cmap2020_stress_filtered_top30_biology_review.tsv
+```
+
+The screen uses four checks:
+
+1. Exclude annotated mechanisms whose intended acute action is cytotoxic or cytostatic, including DNA/RNA/protein synthesis disruption, proteasome or HSP inhibition, mitotic inhibition, and direct p53/apoptosis activation.
+2. Calculate six stress modules from the full 12,328-gene THP1 signatures: p53/DNA damage, apoptosis, integrated stress/UPR, heat shock, oxidative stress, and cell-cycle arrest.
+3. Calculate cosine similarity between each compound's full-transcriptome mean response and a centroid formed from annotated cytotoxic compounds.
+4. For compounds with at least two THP1 profiles, require at least 60% of dose/time conditions to have a positive protective-minus-opposing gene count and require support at the lowest tested dose. Single-profile compounds remain eligible but are labeled `unreplicated_single_profile` rather than being treated as consistent.
+
+Stress-module and cytotoxic-centroid thresholds are the 95th percentiles among launched compounds without an annotated cytotoxic MOA. This makes the thresholds relative to clinically used reference compounds rather than arbitrary z-score cutoffs. LINCS TAS is not used as a toxicity measure. The screen reduced 159 positive-net observed hits to 67; it is a triage filter, not a substitute for viability, morphology, or primary microglial dose-response experiments.
+
+Outputs:
+
+- `docs/cmap2020_stress_filtered_positive_hits.tsv`: all 159 positive-net hits, filter metrics, pass/fail status, and explicit failure reasons.
+- `data/processed/cpa/isomiga_cmap2020_abs1_stress_filtered_drug_scores.tsv`: 67 passing compounds in the original genetics/LINCS rank order.
+- `docs/cmap2020_stress_filtered_top30_biology_review.tsv`: biological discussion and evidence level for every filtered top-30 hit.
+- `results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.pdf`: filtered top-30 coloc-gene heatmap.
+
 ## CPA THP1 imputation
 
 The CPA extension predicts THP1 drug responses for LINCS compounds that are well represented in other cell lines. It is kept separate from the preliminary observed-only pipeline because CPA has a different Python dependency stack.

@@ -161,6 +161,86 @@ REVIEWS = {
         "The 3:1 pattern is favorable, but no resolved compound identity, MOA, or target is available. It should remain an "
         "uncharacterized transcriptional lead until the perturbagen is identified.",
     ),
+    "BRD-K52836380": (
+        "plausible_with_caveats",
+        "AZD-7545 inhibits pyruvate dehydrogenase kinase and shifts mitochondrial fuel use. Immunometabolic control is "
+        "relevant to myeloid state, but the 3:1 result is unreplicated and could still reflect acute metabolic stress.",
+    ),
+    "BRD-K79382620": (
+        "uninterpretable",
+        "The 3:1 pattern is favorable, but this perturbagen has no resolved compound identity, MOA, or target annotation. "
+        "The single THP1 profile is insufficient for biological prioritization without chemical identification.",
+    ),
+    "BRD-K14329163": (
+        "uninterpretable",
+        "The 3:1 pattern is favorable, but neither identity nor pharmacology is resolved and only one THP1 profile is "
+        "available. Treat it as a signature lead pending compound and target confirmation.",
+    ),
+    "BRD-K00615600": (
+        "likely_nonspecific_or_toxic",
+        "AG-14361 inhibits PARP1 and can sensitize cells to DNA damage. Although its 2:0 pattern passes the transcriptional "
+        "stress screen, an unreplicated DNA-repair perturbation is a poor chronic AD lead without viability data.",
+    ),
+    "BRD-K88573743": (
+        "plausible_with_caveats",
+        "A-443654 is an AKT-pathway inhibitor. PI3K-AKT signaling can regulate myeloid inflammatory and survival states, "
+        "and the 2:0 response is replicated, but pathway breadth and survival effects require dose-response validation.",
+    ),
+    "BRD-K49456190": (
+        "likely_nonspecific_or_toxic",
+        "PRIMA-1-MET is a redox-active p53-reactivating compound developed for cancer. Its 2:0 signal passes the present "
+        "screen but is unreplicated and remains likely to reflect electrophilic or oxidative stress.",
+    ),
+    "BRD-K16406336": (
+        "plausible_with_caveats",
+        "Methylene blue is CNS-penetrant and affects redox, mitochondrial, cholinergic, and nitric-oxide biology. Those "
+        "features create neurodegeneration interest, but its promiscuous pharmacology and single 2:0 profile limit attribution.",
+    ),
+    "BRD-K86682249": (
+        "uninterpretable",
+        "The 2:0 pattern is favorable, but the perturbagen has no resolved name, MOA, or target and only one THP1 profile. "
+        "It cannot be assessed biologically until the chemical identity is established.",
+    ),
+    "BRD-A70449690": (
+        "plausible_with_caveats",
+        "Forskolin raises cAMP through adenylyl cyclase, a pathway that can restrain some inflammatory myeloid programs. "
+        "The mechanism is coherent, but the 2:0 result is unreplicated and forskolin is a broad experimental probe.",
+    ),
+    "BRD-K96354014": (
+        "plausible_with_caveats",
+        "Nifedipine is a launched calcium-channel blocker with vascular relevance and possible indirect effects on brain "
+        "health. Its single 2:0 THP1 profile does not establish a microglial target mechanism or CNS exposure-response link.",
+    ),
+    "BRD-A63646118": (
+        "likely_nonspecific_or_toxic",
+        "Fumonisin B1 is a ceramide-synthase inhibitor and established mycotoxin. The 2:0 pattern may illuminate sphingolipid "
+        "biology, but toxicity and broad lipid disruption make it unsuitable as a therapeutic lead.",
+    ),
+    "BRD-K02389548": (
+        "plausible_with_caveats",
+        "RG-2833 is associated with class-I HDAC inhibition. Epigenetic regulation can alter myeloid activation, and the "
+        "2:0 response is replicated, but broad chromatin effects and incomplete local target annotation limit specificity.",
+    ),
+    "BRD-K35716340": (
+        "uninterpretable",
+        "The 2:0 pattern is favorable, but no compound name, MOA, or target is resolved and the THP1 result is unreplicated. "
+        "Chemical identification is required before this signature can support a biological hypothesis.",
+    ),
+    "BRD-K13049116": (
+        "plausible_with_caveats",
+        "BMS-754807 inhibits IGF1R and AKT-linked signaling. This axis can affect myeloid metabolism and survival, but the "
+        "2:0 result is unreplicated and oncology-class pathway inhibition may have a narrow tolerability window.",
+    ),
+    "BRD-K99818283": (
+        "plausible_with_caveats",
+        "PIK-90 is a PI3K-family inhibitor, providing a plausible immune-signaling link. Its 4:3 pattern is nearly balanced, "
+        "however, and the single profile offers weak evidence for a selective protective program.",
+    ),
+    "BRD-K01877528": (
+        "plausible_with_caveats",
+        "TL-HRAS-61 is used as a RAS-pathway perturbagen, which could affect inflammatory signaling. The 3:2 pattern is "
+        "mixed, unreplicated, and lacks adequate target annotation, so it is best treated as a pathway probe.",
+    ),
 }
 
 
@@ -223,6 +303,15 @@ def main() -> None:
         "reasonableness",
         "biology_read",
     ]
+    qc_columns = [
+        "condition_evidence",
+        "max_stress_module_score",
+        "stress_module_cutoff",
+        "cytotoxic_signature_similarity",
+        "cytotoxic_similarity_cutoff",
+        "stress_toxicity_filter_reason",
+    ]
+    ordered.extend(column for column in qc_columns if column in out.columns)
     out = out[ordered]
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)

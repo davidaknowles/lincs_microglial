@@ -35,6 +35,25 @@ Findings:
 - `results/figures/cmap2020_cpa_top30_abs1_coloc_gene_drug_heatmap.pdf` shows the updated top 30. Ticks mark protective and crosses mark opposing effects passing the threshold.
 - `scripts/review_cmap2020_top_hits.py` writes `docs/cmap2020_top30_biology_review.tsv`, with protective/opposing driver genes and a reasonableness discussion for each top-30 entry. The current review classifies 14 as plausible with caveats, 9 as likely nonspecific or toxic, and 7 as uninterpretable because identity or pharmacology is unresolved.
 
+### Stress/toxicity filtering
+
+`scripts/filter_cmap2020_stress_hits.py` adds a post-ranking triage screen to the 159 observed compounds with positive thresholded net protective counts. Reusable condition-consistency, GCTX streaming, stress-module, and centroid calculations are in `lincs_microglial/stress_filter.py`.
+
+Implementation:
+
+- Annotated direct cytotoxic/cytostatic mechanisms are hard exclusions. The dictionary covers DNA/RNA/protein synthesis disruption, proteasome/HSP inhibition, nucleotide synthesis, tubulin/mitotic inhibition, telomerase inhibition, and direct p53/apoptosis mechanisms.
+- Six expression modules cover p53/DNA damage, apoptosis, integrated stress/UPR, heat shock, oxidative stress, and cell-cycle arrest.
+- A full-12,328-gene cytotoxic centroid is formed from 122 observed compounds with annotated cytotoxic mechanisms. Each observed drug receives a cosine similarity to this centroid.
+- Module and centroid cutoffs are calibrated at the 95th percentile among 659 launched, non-cytotoxic-MOA reference compounds. In this run the maximum-module cutoff was 0.8985 and the centroid-similarity cutoff was 0.5359.
+- Drugs with at least two profiles must have a positive protective-minus-opposing gene count in at least 60% of conditions and support at the lowest tested dose. Single-profile compounds are retained as `unreplicated_single_profile`, since lack of replication is uncertainty rather than evidence of toxicity.
+
+Findings:
+
+- The screen retained 67 of 159 positive-net hits.
+- The filtered top 30 include only three `replicated_consistent` compounds: doxepin, A-443654, and RG-2833. The remaining 27 are explicitly marked as unreplicated and require dose-response confirmation.
+- `docs/cmap2020_stress_filtered_positive_hits.tsv` preserves every positive-net hit and its failure reasons. `docs/cmap2020_stress_filtered_top30_biology_review.tsv` discusses every passing top-30 compound and includes the stress-screen evidence columns.
+- `results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.pdf` displays the filtered ranking. The screen is intended for triage and does not replace viability, morphology, or primary microglial validation.
+
 ## CPA THP1 response imputation
 
 The CPA extension is designed to impute THP1 perturbation responses for drugs that have enough LINCS evidence in other cell lines.
