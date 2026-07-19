@@ -123,7 +123,7 @@ def main() -> None:
         )
         + theme_bw()
         + theme(
-            figure_size=(7.0, 3.5),
+            figure_size=(6.0, 3.0),
             axis_title=element_text(size=8),
             axis_text_x=element_text(rotation=45, ha="right", size=5),
             axis_text_y=element_text(size=6.5),
