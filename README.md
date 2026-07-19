@@ -111,6 +111,8 @@ Outputs:
 - `docs/cmap2020_stress_filtered_top30_biology_review.tsv`: biological discussion and evidence level for every filtered top-30 hit.
 - `results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.pdf`: filtered top-30 coloc-gene heatmap.
 
+Heatmap colors use a symmetric `asinh(LINCS z)` mapping, while the legend remains labeled in the original z-score units. This preserves extreme values without compressing the more common effects around `|z| = 1-3`.
+
 ## CPA THP1 imputation
 
 The CPA extension predicts THP1 drug responses for LINCS compounds that are well represented in other cell lines. It is kept separate from the preliminary observed-only pipeline because CPA has a different Python dependency stack.

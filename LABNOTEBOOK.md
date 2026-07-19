@@ -53,6 +53,7 @@ Findings:
 - The filtered top 30 include only three `replicated_consistent` compounds: doxepin, A-443654, and RG-2833. The remaining 27 are explicitly marked as unreplicated and require dose-response confirmation.
 - `docs/cmap2020_stress_filtered_positive_hits.tsv` preserves every positive-net hit and its failure reasons. `docs/cmap2020_stress_filtered_top30_biology_review.tsv` discusses every passing top-30 compound and includes the stress-screen evidence columns.
 - `results/figures/cmap2020_stress_filtered_top30_abs1_coloc_gene_drug_heatmap.pdf` displays the filtered ranking. The screen is intended for triage and does not replace viability, morphology, or primary microglial validation.
+- Heatmap fill uses an `asinh(LINCS z)` color mapping with legend labels in the original z-score units. This prevents the XAV-939/CASP2 value at the LINCS `z = 10` ceiling from compressing the remaining effects.
 
 ## CPA THP1 response imputation
 

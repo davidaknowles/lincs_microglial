@@ -110,11 +110,24 @@ def main() -> None:
 
     max_abs = float(np.nanmax(np.abs(plot_df["mean_z"]))) if not plot_df.empty else 1.0
     max_abs = max(max_abs, 1.0)
+    color_breaks = [-max_abs, -3, -1, 0, 1, 3, max_abs]
+    color_breaks = sorted(set(value for value in color_breaks if -max_abs <= value <= max_abs))
+    plot_df["mean_z_asinh"] = np.arcsinh(plot_df["mean_z"])
+    marker_df["mean_z_asinh"] = np.arcsinh(marker_df["mean_z"])
+    transformed_max = float(np.arcsinh(max_abs))
     plot = (
-        ggplot(plot_df, aes("drug_label", "gene_label", fill="mean_z"))
+        ggplot(plot_df, aes("drug_label", "gene_label", fill="mean_z_asinh"))
         + geom_tile(color="#f5f5f5", size=0.25)
         + geom_text(marker_df, aes(label="marker"), size=6, color="#111111")
-        + scale_fill_gradient2(low="#2166ac", mid="#f7f7f7", high="#b2182b", midpoint=0, limits=(-max_abs, max_abs))
+        + scale_fill_gradient2(
+            low="#2166ac",
+            mid="#f7f7f7",
+            high="#b2182b",
+            midpoint=0,
+            limits=(-transformed_max, transformed_max),
+            breaks=np.arcsinh(color_breaks),
+            labels=[f"{value:g}" for value in color_breaks],
+        )
         + labs(
             x="Top ranked drug",
             y="ISOMIGA coloc gene, sorted by naive MR beta",
